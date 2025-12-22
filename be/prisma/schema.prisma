@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           BigInt   @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  roles        UserRole[]
+  refreshTokens RefreshToken[]
+  uploadedFiles File[] @relation("UploadedFiles")
+  auditLogs    AuditLog[] @relation("ActorLogs")
+  statusChanges StatusHistory[] @relation("StatusChangedBy")
+  entityFilesCreated EntityFile[] @relation("EntityFilesCreatedBy")
+}
+
+model Role {
+  id          BigInt   @id @default(autoincrement())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id        BigInt   @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  module    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles     RolePermission[]
+}
+
+model UserRole {
+  userId BigInt
+  roleId BigInt
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  roleId       BigInt
+  permissionId BigInt
+
+  role Role @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model RefreshToken {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  userAgent String?
+  ip        String?
+
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId])
+}
+
+model File {
+  id           BigInt   @id @default(autoincrement())
+  storage      String
+  path         String
+  url          String?
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  uploadedById BigInt
+  createdAt    DateTime @default(now())
+
+  uploadedBy User @relation("UploadedFiles", fields: [uploadedById], references: [id])
+  entityFiles EntityFile[]
+
+  @@index([uploadedById])
+}
+
+model EntityFile {
+  id         BigInt   @id @default(autoincrement())
+  entityType String
+  entityId   BigInt
+  fileId     BigInt
+  tag        String?
+  createdById BigInt
+  createdAt  DateTime @default(now())
+
+  file      File @relation(fields: [fileId], references: [id])
+  createdBy User @relation("EntityFilesCreatedBy", fields: [createdById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([fileId])
+}
+
+model AuditLog {
+  id          BigInt   @id @default(autoincrement())
+  actorUserId BigInt?
+  action      String
+  entityType  String?
+  entityId    BigInt?
+  beforeJson  Json?
+  afterJson   Json?
+  metadataJson Json?
+  createdAt   DateTime @default(now())
+
+  actorUser User? @relation("ActorLogs", fields: [actorUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model StatusHistory {
+  id         BigInt   @id @default(autoincrement())
+  entityType String
+  entityId   BigInt
+  fromStatus String?
+  toStatus   String
+  note       String?
+  changedById BigInt
+  createdAt  DateTime @default(now())
+
+  changedBy User @relation("StatusChangedBy", fields: [changedById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([changedById])
+  @@index([createdAt])
+}
+
+model Customer {
+  id        BigInt   @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([name])
+  @@index([status])
+}
