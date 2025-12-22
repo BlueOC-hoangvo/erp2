@@ -8,22 +8,26 @@ datasource db {
 }
 
 model User {
-  id           BigInt   @id @default(autoincrement())
-  email        String   @unique
+  id           BigInt    @id @default(autoincrement())
+  email        String    @unique
   passwordHash String
   fullName     String
-  isActive     Boolean  @default(true)
+  isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  roles        UserRole[]
-  refreshTokens RefreshToken[]
-  uploadedFiles File[] @relation("UploadedFiles")
-  auditLogs    AuditLog[] @relation("ActorLogs")
-  statusChanges StatusHistory[] @relation("StatusChangedBy")
-  entityFilesCreated EntityFile[] @relation("EntityFilesCreatedBy")
+  roles              UserRole[]
+  refreshTokens      RefreshToken[]
+  uploadedFiles      File[]           @relation("UploadedFiles")
+  auditLogs          AuditLog[]       @relation("ActorLogs")
+  statusChanges      StatusHistory[]  @relation("StatusChangedBy")
+  entityFilesCreated EntityFile[]     @relation("EntityFilesCreatedBy")
+  customerNotes      CustomerNote[]
+  salesOrders        SalesOrder[]
+  quotations         Quotation[]
+  productionPlans    ProductionPlan[]
 }
 
 model Role {
@@ -46,7 +50,7 @@ model Permission {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roles     RolePermission[]
+  roles RolePermission[]
 }
 
 model UserRole {
@@ -64,7 +68,7 @@ model RolePermission {
   roleId       BigInt
   permissionId BigInt
 
-  role Role @relation(fields: [roleId], references: [id])
+  role       Role       @relation(fields: [roleId], references: [id])
   permission Permission @relation(fields: [permissionId], references: [id])
 
   @@id([roleId, permissionId])
@@ -72,16 +76,17 @@ model RolePermission {
 }
 
 model RefreshToken {
-  id        BigInt   @id @default(autoincrement())
+  id        BigInt    @id @default(autoincrement())
   userId    BigInt
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   userAgent String?
   ip        String?
 
   user User @relation(fields: [userId], references: [id])
+
   @@index([userId])
 }
 
@@ -96,20 +101,20 @@ model File {
   uploadedById BigInt
   createdAt    DateTime @default(now())
 
-  uploadedBy User @relation("UploadedFiles", fields: [uploadedById], references: [id])
+  uploadedBy  User         @relation("UploadedFiles", fields: [uploadedById], references: [id])
   entityFiles EntityFile[]
 
   @@index([uploadedById])
 }
 
 model EntityFile {
-  id         BigInt   @id @default(autoincrement())
-  entityType String
-  entityId   BigInt
-  fileId     BigInt
-  tag        String?
+  id          BigInt   @id @default(autoincrement())
+  entityType  String
+  entityId    BigInt
+  fileId      BigInt
+  tag         String?
   createdById BigInt
-  createdAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   file      File @relation(fields: [fileId], references: [id])
   createdBy User @relation("EntityFilesCreatedBy", fields: [createdById], references: [id])
@@ -119,15 +124,15 @@ model EntityFile {
 }
 
 model AuditLog {
-  id          BigInt   @id @default(autoincrement())
-  actorUserId BigInt?
-  action      String
-  entityType  String?
-  entityId    BigInt?
-  beforeJson  Json?
-  afterJson   Json?
+  id           BigInt   @id @default(autoincrement())
+  actorUserId  BigInt?
+  action       String
+  entityType   String?
+  entityId     BigInt?
+  beforeJson   Json?
+  afterJson    Json?
   metadataJson Json?
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   actorUser User? @relation("ActorLogs", fields: [actorUserId], references: [id])
 
@@ -138,14 +143,14 @@ model AuditLog {
 }
 
 model StatusHistory {
-  id         BigInt   @id @default(autoincrement())
-  entityType String
-  entityId   BigInt
-  fromStatus String?
-  toStatus   String
-  note       String?
+  id          BigInt   @id @default(autoincrement())
+  entityType  String
+  entityId    BigInt
+  fromStatus  String?
+  toStatus    String
+  note        String?
   changedById BigInt
-  createdAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   changedBy User @relation("StatusChangedBy", fields: [changedById], references: [id])
 
@@ -155,17 +160,539 @@ model StatusHistory {
 }
 
 model Customer {
-  id        BigInt   @id @default(autoincrement())
-  code      String   @unique
-  name      String
-  phone     String?
-  email     String?
-  address   String?
-  status    String   @default("active")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
+  id               BigInt            @id @default(autoincrement())
+  code             String            @unique
+  name             String
+  phone            String?
+  email            String?
+  address          String?
+  status           String            @default("active")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  customerContacts CustomerContact[]
+  customerNotes    CustomerNote[]
+  customerHandbook CustomerHandbook?
+  salesOrders      SalesOrder[]
+  quotations       Quotation[]
 
   @@index([name])
   @@index([status])
+}
+
+// ========================
+// SALES: Customer details
+// ========================
+model CustomerContact {
+  id         BigInt   @id @default(autoincrement())
+  customerId BigInt
+  name       String
+  phone      String?
+  email      String?
+  position   String?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+}
+
+model CustomerNote {
+  id          BigInt   @id @default(autoincrement())
+  customerId  BigInt
+  note        String   @db.Text
+  createdById BigInt?
+  createdAt   DateTime @default(now())
+
+  customer  Customer @relation(fields: [customerId], references: [id])
+  createdBy User?    @relation(fields: [createdById], references: [id])
+
+  @@index([customerId])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model CustomerHandbook {
+  id                BigInt   @id @default(autoincrement())
+  customerId        BigInt   @unique
+  generalInfo       Json?
+  persona           Json?
+  carePolicy        Json?
+  consultingHistory Json?
+  equipments        Json?
+  updatedAt         DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+// ========================
+// SALES: Products / Orders / Quotations
+// ========================
+model Product {
+  id           BigInt    @id @default(autoincrement())
+  sku          String    @unique
+  name         String
+  unit         String?
+  width        Decimal?  @db.Decimal(10, 2)
+  height       Decimal?  @db.Decimal(10, 2)
+  length       Decimal?  @db.Decimal(10, 2)
+  weight       Decimal?  @db.Decimal(10, 2)
+  standardCost Decimal?  @db.Decimal(18, 2)
+  salePrice    Decimal?  @db.Decimal(18, 2)
+  safetyStock  Int?
+  status       String    @default("active")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  orderItems        SalesOrderItem[]
+  quotationItems    QuotationItem[]
+  planItems         ProductionPlanItem[]
+  shipmentItems     ShipmentItem[]
+  inboundItems      InboundItem[]
+  outboundItems     OutboundItem[]
+  stockMoves        StockMove[]
+  workOrders        WorkOrder[]
+  inventoryBalances InventoryBalance[]
+
+  @@index([name])
+  @@index([status])
+}
+
+model SalesOrder {
+  id              BigInt    @id @default(autoincrement())
+  code            String    @unique
+  customerId      BigInt
+  orderType       String
+  paymentMethod   String?
+  deliveryAddress String?
+  deliveryDate    DateTime?
+  currency        String    @default("VND")
+
+  subtotal       Decimal @default(0) @db.Decimal(18, 2)
+  shippingFee    Decimal @default(0) @db.Decimal(18, 2)
+  discountAmount Decimal @default(0) @db.Decimal(18, 2)
+  taxEnabled     Boolean @default(false)
+  taxAmount      Decimal @default(0) @db.Decimal(18, 2)
+  total          Decimal @default(0) @db.Decimal(18, 2)
+
+  status      String    @default("draft")
+  createdById BigInt?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  customer       Customer         @relation(fields: [customerId], references: [id])
+  createdBy      User?            @relation(fields: [createdById], references: [id])
+  items          SalesOrderItem[]
+  workOrders     WorkOrder[]
+  outboundOrders OutboundOrder[]
+  shipments      Shipment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SalesOrderItem {
+  id           BigInt  @id @default(autoincrement())
+  salesOrderId BigInt
+  productId    BigInt
+  qty          Int
+  unitPrice    Decimal @db.Decimal(18, 2)
+  lineTotal    Decimal @db.Decimal(18, 2)
+  note         String?
+
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
+  product    Product    @relation(fields: [productId], references: [id])
+
+  @@index([salesOrderId])
+  @@index([productId])
+}
+
+model Quotation {
+  id             BigInt    @id @default(autoincrement())
+  code           String    @unique
+  customerId     BigInt
+  validUntil     DateTime?
+  status         String    @default("draft")
+  subtotal       Decimal   @default(0) @db.Decimal(18, 2)
+  discountAmount Decimal   @default(0) @db.Decimal(18, 2)
+  total          Decimal   @default(0) @db.Decimal(18, 2)
+
+  createdById BigInt?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer  Customer        @relation(fields: [customerId], references: [id])
+  createdBy User?           @relation(fields: [createdById], references: [id])
+  items     QuotationItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuotationItem {
+  id          BigInt  @id @default(autoincrement())
+  quotationId BigInt
+  productId   BigInt
+  qty         Int
+  unitPrice   Decimal @db.Decimal(18, 2)
+  lineTotal   Decimal @db.Decimal(18, 2)
+
+  quotation Quotation @relation(fields: [quotationId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@index([quotationId])
+  @@index([productId])
+}
+
+// ========================
+// PRODUCTION: Plans / Work Orders / Resources
+// ========================
+model ProductionPlan {
+  id          BigInt    @id @default(autoincrement())
+  code        String    @unique
+  name        String
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String    @default("draft")
+  createdById BigInt?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User?                @relation(fields: [createdById], references: [id])
+  items     ProductionPlanItem[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ProductionPlanItem {
+  id        BigInt @id @default(autoincrement())
+  planId    BigInt
+  productId BigInt
+  qty       Int
+
+  plan    ProductionPlan @relation(fields: [planId], references: [id])
+  product Product        @relation(fields: [productId], references: [id])
+
+  @@index([planId])
+  @@index([productId])
+}
+
+model WorkOrder {
+  id           BigInt    @id @default(autoincrement())
+  code         String    @unique
+  salesOrderId BigInt?
+  productId    BigInt
+  qty          Int
+  plannedStart DateTime?
+  plannedEnd   DateTime?
+  status       String    @default("planned")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  salesOrder SalesOrder?         @relation(fields: [salesOrderId], references: [id])
+  product    Product             @relation(fields: [productId], references: [id])
+  steps      WorkOrderStep[]
+  resources  WorkOrderResource[]
+
+  @@index([salesOrderId])
+  @@index([productId])
+  @@index([status])
+}
+
+model WorkOrderStep {
+  id          BigInt    @id @default(autoincrement())
+  workOrderId BigInt
+  stepNo      Int
+  name        String
+  status      String    @default("todo")
+  startedAt   DateTime?
+  finishedAt  DateTime?
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+
+  @@unique([workOrderId, stepNo])
+  @@index([workOrderId])
+}
+
+model Resource {
+  id       BigInt   @id @default(autoincrement())
+  code     String   @unique
+  name     String
+  type     String
+  capacity Decimal? @db.Decimal(18, 2)
+  status   String   @default("active")
+
+  workOrders WorkOrderResource[]
+}
+
+model WorkOrderResource {
+  id          BigInt   @id @default(autoincrement())
+  workOrderId BigInt
+  resourceId  BigInt
+  assignedQty Decimal? @db.Decimal(18, 2)
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  resource  Resource  @relation(fields: [resourceId], references: [id])
+
+  @@unique([workOrderId, resourceId])
+  @@index([workOrderId])
+  @@index([resourceId])
+}
+
+// ========================
+// WAREHOUSE: Warehouses / Zones / Inventory / Inbound / Outbound
+// ========================
+model Warehouse {
+  id      BigInt  @id @default(autoincrement())
+  code    String  @unique
+  name    String
+  address String?
+  status  String  @default("active")
+
+  zones     WarehouseZone[]
+  balances  InventoryBalance[]
+  moves     StockMove[]
+  inbounds  InboundOrder[]
+  outbounds OutboundOrder[]
+}
+
+model WarehouseZone {
+  id          BigInt @id @default(autoincrement())
+  warehouseId BigInt
+  code        String
+  name        String
+
+  warehouse Warehouse          @relation(fields: [warehouseId], references: [id])
+  balances  InventoryBalance[]
+  moves     StockMove[]
+
+  @@unique([warehouseId, code])
+  @@index([warehouseId])
+}
+
+model InventoryBalance {
+  id          BigInt  @id @default(autoincrement())
+  warehouseId BigInt
+  zoneId      BigInt?
+  productId   BigInt
+  onHand      Int     @default(0)
+  reserved    Int     @default(0)
+  available   Int     @default(0)
+
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id])
+  zone      WarehouseZone? @relation(fields: [zoneId], references: [id])
+  product   Product        @relation(fields: [productId], references: [id])
+
+  @@unique([warehouseId, zoneId, productId])
+  @@index([productId])
+}
+
+model StockMove {
+  id          BigInt   @id @default(autoincrement())
+  moveType    String
+  refType     String?
+  refId       BigInt?
+  warehouseId BigInt
+  zoneId      BigInt?
+  productId   BigInt
+  qty         Int
+  unitCost    Decimal? @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id])
+  zone      WarehouseZone? @relation(fields: [zoneId], references: [id])
+  product   Product        @relation(fields: [productId], references: [id])
+
+  @@index([warehouseId])
+  @@index([zoneId])
+  @@index([productId])
+  @@index([refType, refId])
+  @@index([createdAt])
+}
+
+model InboundOrder {
+  id           BigInt    @id @default(autoincrement())
+  code         String    @unique
+  warehouseId  BigInt
+  supplierName String?
+  status       String    @default("waiting")
+  expectedDate DateTime?
+  createdAt    DateTime  @default(now())
+
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id])
+  items     InboundItem[]
+
+  @@index([warehouseId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model InboundItem {
+  id        BigInt   @id @default(autoincrement())
+  inboundId BigInt
+  productId BigInt
+  qty       Int
+  unitCost  Decimal? @db.Decimal(18, 2)
+
+  inbound InboundOrder @relation(fields: [inboundId], references: [id])
+  product Product      @relation(fields: [productId], references: [id])
+
+  @@index([inboundId])
+  @@index([productId])
+}
+
+model OutboundOrder {
+  id           BigInt   @id @default(autoincrement())
+  code         String   @unique
+  warehouseId  BigInt
+  salesOrderId BigInt?
+  status       String   @default("waiting")
+  createdAt    DateTime @default(now())
+
+  warehouse  Warehouse      @relation(fields: [warehouseId], references: [id])
+  salesOrder SalesOrder?    @relation(fields: [salesOrderId], references: [id])
+  items      OutboundItem[]
+
+  @@index([warehouseId])
+  @@index([salesOrderId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OutboundItem {
+  id         BigInt @id @default(autoincrement())
+  outboundId BigInt
+  productId  BigInt
+  qty        Int
+
+  outbound OutboundOrder @relation(fields: [outboundId], references: [id])
+  product  Product       @relation(fields: [productId], references: [id])
+
+  @@index([outboundId])
+  @@index([productId])
+}
+
+// ========================
+// SHIPPING: Partners / Vehicles / Plans / Shipments / Costs
+// ========================
+model ShippingPartner {
+  id     BigInt  @id @default(autoincrement())
+  code   String  @unique
+  name   String
+  phone  String?
+  email  String?
+  status String  @default("active")
+
+  plans     ShippingPlan[]
+  shipments Shipment[]
+}
+
+model Vehicle {
+  id              BigInt    @id @default(autoincrement())
+  plateNo         String    @unique
+  name            String?
+  maxLoadKg       Decimal?  @db.Decimal(18, 2)
+  lastMaintenance DateTime?
+  nextMaintenance DateTime?
+  status          String    @default("active")
+
+  plans     ShippingPlan[]
+  shipments Shipment[]
+}
+
+model ShippingPlan {
+  id        BigInt   @id @default(autoincrement())
+  code      String   @unique
+  planDate  DateTime
+  partnerId BigInt?
+  vehicleId BigInt?
+  routeName String?
+  status    String   @default("draft")
+
+  partner   ShippingPartner? @relation(fields: [partnerId], references: [id])
+  vehicle   Vehicle?         @relation(fields: [vehicleId], references: [id])
+  shipments Shipment[]
+
+  @@index([planDate])
+  @@index([partnerId])
+  @@index([vehicleId])
+  @@index([status])
+}
+
+model Shipment {
+  id           BigInt   @id @default(autoincrement())
+  code         String   @unique
+  salesOrderId BigInt?
+  planId       BigInt?
+  partnerId    BigInt?
+  vehicleId    BigInt?
+  shipFrom     String?
+  shipTo       String?
+  status       String   @default("waiting")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  salesOrder SalesOrder?      @relation(fields: [salesOrderId], references: [id])
+  plan       ShippingPlan?    @relation(fields: [planId], references: [id])
+  partner    ShippingPartner? @relation(fields: [partnerId], references: [id])
+  vehicle    Vehicle?         @relation(fields: [vehicleId], references: [id])
+
+  items ShipmentItem[]
+  costs ShipmentCost[]
+
+  @@index([salesOrderId])
+  @@index([planId])
+  @@index([partnerId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ShipmentItem {
+  id         BigInt @id @default(autoincrement())
+  shipmentId BigInt
+  productId  BigInt
+  qty        Int
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([shipmentId])
+  @@index([productId])
+}
+
+model ShipmentCost {
+  id         BigInt  @id @default(autoincrement())
+  shipmentId BigInt
+  costType   String  @default("book_ship")
+  amount     Decimal @default(0) @db.Decimal(18, 2)
+  note       String?
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+
+  @@index([shipmentId])
+}
+
+// ========================
+// MARKETING
+// ========================
+model MarketingCampaign {
+  id             BigInt    @id @default(autoincrement())
+  code           String    @unique
+  name           String
+  startDate      DateTime?
+  endDate        DateTime?
+  cost           Decimal   @default(0) @db.Decimal(18, 2)
+  revenue        Decimal   @default(0) @db.Decimal(18, 2)
+  conversionRate Decimal?  @db.Decimal(6, 2)
+  status         String    @default("active")
+  createdAt      DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
 }
