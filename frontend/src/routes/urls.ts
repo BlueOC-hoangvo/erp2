@@ -15,14 +15,17 @@ export const URLS = {
 
   // Production
   PRODUCTION_PLANS: "/production/plans",
-  PRODUCTION_WORK_ORDERS: "/production/work-orders",
+  PRODUCTION_PARAMS: "/production/params",
   PRODUCTION_RESOURCES: "/production/resources",
 
+  PRODUCTION_ORDERS: "/production/orders",
+  PRODUCTION_ORDER_DETAIL: (id: string | number) => `/production/orders/${id}`,
+
   // Warehouse
-  WAREHOUSE_WAREHOUSES: "/warehouse/warehouses",
-  WAREHOUSE_INVENTORY: "/warehouse/inventory",
-  WAREHOUSE_INBOUND: "/warehouse/inbound",
-  WAREHOUSE_OUTBOUND: "/warehouse/outbound",
+  WAREHOUSE_PRODUCTS: "/warehouse/products",
+  WAREHOUSE_IN: "/warehouse/in",
+  WAREHOUSE_OUT: "/warehouse/out",
+  WAREHOUSE_TRANSFER: "/warehouse/transfer",
 
   // Shipping
   SHIPPING_PARTNERS: "/shipping/partners",
