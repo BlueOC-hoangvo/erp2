@@ -2,7 +2,7 @@ npm install
 cấu hình .env
 npx prisma generate
 npx prisma migrate dev
-npx prisma db seed
+npm run seed
 
 npm run dev
 const passwordHash = await bcrypt.hash("Admin@123", 10);

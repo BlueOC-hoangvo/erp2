@@ -10,9 +10,11 @@ import { errorHandler } from "./middleware/errorHandler";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { meRoutes } from "./modules/me/me.route";
 import { customersRoutes } from "./modules/customers/customers.routes";
+import { productsRoutes } from "./modules/products/products.routes";
 import { filesRoutes } from "./modules/files/files.routes";
 import { auditRoutes } from "./modules/audit/audit.routes";
 import { statusRoutes } from "./modules/status/status.routes";
+import { salesOrdersRoutes as salesOrdersRoutesModule } from "./modules/sales-orders/sales-orders.routes";
 
 export function buildApp() {
   const app = express();
@@ -31,6 +33,8 @@ export function buildApp() {
   app.use("/auth", authRoutes());
   app.use("/", meRoutes());
   app.use("/customers", customersRoutes());
+  app.use("/products", productsRoutes());
+  app.use("/sales-orders", salesOrdersRoutesModule);
   app.use("/files", filesRoutes());
   app.use("/audit-logs", auditRoutes());
   app.use("/status", statusRoutes());

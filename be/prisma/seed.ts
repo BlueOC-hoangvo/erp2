@@ -27,6 +27,10 @@ const PERMS = [
   { code: "sales.customer.update", name: "Update customers", module: "sales" },
   { code: "sales.customer.delete", name: "Delete customers", module: "sales" },
 
+  // Products
+  { code: "product.read", name: "Read products", module: "product" },
+  { code: "product.write", name: "Write products", module: "product" },
+
   // Files
   { code: "files.upload", name: "Upload files", module: "files" },
   { code: "files.attach", name: "Attach files", module: "files" },

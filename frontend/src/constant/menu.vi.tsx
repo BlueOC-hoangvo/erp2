@@ -34,9 +34,22 @@ export const MENU_VI: AppMenuItem[] = [
         permission: PERMS.CUSTOMER_READ,
       },
       {
+        key: "products",
+        label: "Sản phẩm",
+        path: URLS.SALES_PRODUCTS,
+        permission: PERMS.PRODUCT_READ,
+      },
+      {
         key: "orders",
-        label: "Đơn hàng (sắp có)",
+        label: "Đơn hàng",
         path: URLS.SALES_ORDERS,
+        permission: "sales.order.read",
+      },
+      {
+        key: "orders-dashboard",
+        label: "Dashboard Sales",
+        path: "/sales-orders/dashboard",
+        permission: "sales.order.read",
       },
       {
         key: "quotations",

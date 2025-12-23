@@ -9,9 +9,16 @@ import { URLS } from "./urls";
 import Home from "@/modules/home/views/Home";
 import Customers from "@/modules/customers/views/Customers";
 import CustomerDetail from "@/modules/customers/views/CustomerDetail";
+import Products from "@/modules/products/views/Products";
 import Files from "@/modules/files/views/Files";
 import AuditLogs from "@/modules/audit-logs/views/AuditLogs";
 import StatusHistory from "@/modules/status/views/StatusHistory";
+
+// Sales Orders
+import { SalesOrdersDashboard } from "@/modules/sales-orders/views/SalesOrdersDashboard";
+import { SalesOrdersList } from "@/modules/sales-orders/views/SalesOrdersList";
+import { SalesOrdersDetail } from "@/modules/sales-orders/views/SalesOrdersDetail";
+import { SalesOrdersForm } from "@/modules/sales-orders/views/SalesOrdersForm";
 
 export default function AppRoutes() {
   return (
@@ -25,6 +32,13 @@ export default function AppRoutes() {
 
           <Route path={URLS.SALES_CUSTOMERS} element={<Customers />} />
           <Route path="/sales/customers/:id" element={<CustomerDetail />} />
+          <Route path={URLS.SALES_PRODUCTS} element={<Products />} />
+
+          <Route path={URLS.SALES_ORDERS} element={<SalesOrdersList />} />
+          <Route path="/sales-orders/dashboard" element={<SalesOrdersDashboard />} />
+          <Route path="/sales-orders/create" element={<SalesOrdersForm />} />
+          <Route path="/sales-orders/:id" element={<SalesOrdersDetail />} />
+          <Route path="/sales-orders/:id/edit" element={<SalesOrdersForm />} />
 
           <Route path={URLS.FILES} element={<Files />} />
           <Route path={URLS.AUDIT_LOGS} element={<AuditLogs />} />
