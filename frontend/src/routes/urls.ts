@@ -1,13 +1,17 @@
 export const URLS = {
   LOGIN: "/login",
   DASHBOARD: "/",
-  
+
   // Sales
   SALES_CUSTOMERS: "/sales/customers",
   SALES_CUSTOMER_DETAIL: (id: string | number) => `/sales/customers/${id}`,
   SALES_PRODUCTS: "/sales/products",
   SALES_ORDERS: "/sales-orders",
+
   SALES_QUOTATIONS: "/sales/quotations",
+  SALES_QUOTATION_CREATE: "/sales/quotations/create",
+  SALES_QUOTATION_DETAIL: (id: string | number) => `/sales/quotations/${id}`,
+  SALES_QUOTATION_EDIT: (id: string | number) => `/sales/quotations/${id}/edit`,
 
   // Production
   PRODUCTION_PLANS: "/production/plans",
@@ -25,7 +29,11 @@ export const URLS = {
   SHIPPING_VEHICLES: "/shipping/vehicles",
   SHIPPING_PLANS: "/shipping/plans",
   SHIPPING_SHIPMENTS: "/shipping/shipments",
-
+  // Sales - Marketing
+  SALES_CAMPAIGNS: "/sales/campaigns",
+  SALES_CAMPAIGNS_CREATE: "/sales/campaigns/create",
+  SALES_CAMPAIGNS_DETAIL: (id: string | number) => `/sales/campaigns/${id}`,
+  SALES_CAMPAIGNS_EDIT: (id: string | number) => `/sales/campaigns/${id}/edit`,
   // System
   FILES: "/files",
   AUDIT_LOGS: "/system/audit-logs",

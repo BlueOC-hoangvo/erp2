@@ -134,19 +134,22 @@ export class SalesOrdersService {
       prisma.salesOrder.count({ where }),
     ]);
 
-    return {
-      data: orders.map(order => ({
-        ...order,
-        id: order.id.toString(),
-        customerId: order.customerId.toString(),
-        createdById: order.createdById?.toString(),
-        items: order.items.map(item => ({
-          ...item,
-          id: item.id.toString(),
-          salesOrderId: item.salesOrderId.toString(),
-          productId: item.productId.toString(),
+      return {
+        data: orders.map(order => ({
+          ...order,
+          id: order.id.toString(),
+          orderNumber: order.code,
+          customerId: order.customerId.toString(),
+          customerName: order.customer?.name || '',
+          customerEmail: order.customer?.email || '',
+          createdById: order.createdById?.toString(),
+          items: (order.items || []).map(item => ({
+            ...item,
+            id: item.id.toString(),
+            salesOrderId: item.salesOrderId.toString(),
+            productId: item.productId.toString(),
+          })),
         })),
-      })),
       meta: {
         page,
         limit,
@@ -207,7 +210,7 @@ export class SalesOrdersService {
       id: order.id.toString(),
       customerId: order.customerId.toString(),
       createdById: order.createdById?.toString(),
-      items: order.items.map(item => ({
+      items: (order.items || []).map(item => ({
         ...item,
         id: item.id.toString(),
         salesOrderId: item.salesOrderId.toString(),
@@ -278,8 +281,8 @@ export class SalesOrdersService {
           code,
           customerId: BigInt(customerId),
           orderType,
-          paymentMethod,
-          deliveryAddress,
+          paymentMethod: paymentMethod || null,
+          deliveryAddress: deliveryAddress || null,
           deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
           currency,
           subtotal: calculatedTotals.subtotal,
@@ -301,7 +304,7 @@ export class SalesOrdersService {
           qty: item.qty,
           unitPrice: item.unitPrice,
           lineTotal: item.qty * item.unitPrice,
-          note: item.note,
+          note: item.note || null,
         })),
       });
 
@@ -314,7 +317,7 @@ export class SalesOrdersService {
       action: "sales_order.create",
       entityType: "SalesOrder",
       entityId: order.id,
-      afterJson: order,
+      after: order,
     });
 
     return this.getById(order.id.toString());
@@ -407,7 +410,7 @@ export class SalesOrdersService {
             qty: item.qty,
             unitPrice: item.unitPrice,
             lineTotal: item.qty * item.unitPrice,
-            note: item.note,
+            note: item.note || null,
           })),
         });
       }
@@ -421,8 +424,8 @@ export class SalesOrdersService {
       action: "sales_order.update",
       entityType: "SalesOrder",
       entityId: BigInt(id),
-      beforeJson: order,
-      afterJson: updatedOrder,
+      before: order,
+      after: updatedOrder,
     });
 
     return this.getById(id);
@@ -503,7 +506,7 @@ export class SalesOrdersService {
       action: "sales_order.delete",
       entityType: "SalesOrder",
       entityId: BigInt(id),
-      beforeJson: order,
+      before: order,
     });
 
     return { success: true };

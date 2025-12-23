@@ -13,6 +13,12 @@ import Products from "@/modules/products/views/Products";
 import Files from "@/modules/files/views/Files";
 import AuditLogs from "@/modules/audit-logs/views/AuditLogs";
 import StatusHistory from "@/modules/status/views/StatusHistory";
+import QuotationsList from "@/modules/quotations/views/QuotationsList";
+import QuotationDetail from "@/modules/quotations/views/QuotationDetail";
+import QuotationForm from "@/modules/quotations/views/QuotationForm";
+import CampaignsList from "@/modules/campaigns/views/CampaignsList";
+import CampaignForm from "@/modules/campaigns/views/CampaignForm";
+import CampaignDetail from "@/modules/campaigns/views/CampaignDetail";
 
 // Sales Orders
 import { SalesOrdersDashboard } from "@/modules/sales-orders/views/SalesOrdersDashboard";
@@ -35,10 +41,31 @@ export default function AppRoutes() {
           <Route path={URLS.SALES_PRODUCTS} element={<Products />} />
 
           <Route path={URLS.SALES_ORDERS} element={<SalesOrdersList />} />
-          <Route path="/sales-orders/dashboard" element={<SalesOrdersDashboard />} />
+          <Route
+            path="/sales-orders/dashboard"
+            element={<SalesOrdersDashboard />}
+          />
           <Route path="/sales-orders/create" element={<SalesOrdersForm />} />
           <Route path="/sales-orders/:id" element={<SalesOrdersDetail />} />
           <Route path="/sales-orders/:id/edit" element={<SalesOrdersForm />} />
+          <Route path={URLS.SALES_CAMPAIGNS} element={<CampaignsList />} />
+          <Route
+            path={URLS.SALES_CAMPAIGNS_CREATE}
+            element={<CampaignForm />}
+          />
+          <Route path="/sales/campaigns/:id" element={<CampaignDetail />} />
+          <Route path="/sales/campaigns/:id/edit" element={<CampaignForm />} />
+
+          <Route path={URLS.SALES_QUOTATIONS} element={<QuotationsList />} />
+          <Route
+            path={URLS.SALES_QUOTATIONS_CREATE}
+            element={<QuotationForm />}
+          />
+          <Route path="/sales/quotations/:id" element={<QuotationDetail />} />
+          <Route
+            path="/sales/quotations/:id/edit"
+            element={<QuotationForm />}
+          />
 
           <Route path={URLS.FILES} element={<Files />} />
           <Route path={URLS.AUDIT_LOGS} element={<AuditLogs />} />

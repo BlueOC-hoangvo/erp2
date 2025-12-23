@@ -31,30 +31,26 @@ export const MENU_VI: AppMenuItem[] = [
         key: "customers",
         label: "Khách hàng",
         path: URLS.SALES_CUSTOMERS,
-        permission: PERMS.CUSTOMER_READ,
+        // permission: PERMS.CUSTOMER_READ, // ← COMMENT HOẶC XÓA DÒNG NÀY
       },
+      { key: "quotations", label: "Báo giá", path: URLS.SALES_QUOTATIONS },
       {
         key: "products",
         label: "Sản phẩm",
         path: URLS.SALES_PRODUCTS,
-        permission: PERMS.PRODUCT_READ,
+        // permission: PERMS.PRODUCT_READ, // ← COMMENT HOẶC XÓA DÒNG NÀY
       },
+      {
+        key: "campaigns",
+        label: "Chiến dịch marketing",
+        path: URLS.SALES_CAMPAIGNS,
+      },
+
       {
         key: "orders",
         label: "Đơn hàng",
         path: URLS.SALES_ORDERS,
-        permission: "sales.order.read",
-      },
-      {
-        key: "orders-dashboard",
-        label: "Dashboard Sales",
-        path: "/sales-orders/dashboard",
-        permission: "sales.order.read",
-      },
-      {
-        key: "quotations",
-        label: "Báo giá (sắp có)",
-        path: URLS.SALES_QUOTATIONS,
+        // permission: "sales.order.read", // ← COMMENT HOẶC XÓA DÒNG NÀY
       },
     ],
   },

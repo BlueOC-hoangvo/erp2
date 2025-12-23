@@ -11,6 +11,17 @@ type GetSalesOrdersResponse = {
   };
 };
 
+// Response từ unwrap function
+type UnwrappedResponse = {
+  data: SalesOrder[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  } | null;
+};
+
 type GetSalesOrderStatsResponse = {
   data: SalesOrderStats;
 };
