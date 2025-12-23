@@ -8,6 +8,8 @@ import {
   TruckOutlined,
   BankOutlined,
   BuildOutlined,
+  ShoppingOutlined,
+  CalculatorOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { URLS } from "@/routes/urls";
@@ -51,6 +53,45 @@ export const MENU_VI: AppMenuItem[] = [
         key: "products",
         label: "Sản phẩm",
         path: URLS.SALES_PRODUCTS,
+      },
+    ],
+  },
+  {
+    key: "purchasing",
+    icon: <ShoppingOutlined />,
+    label: "Mua hàng",
+    children: [
+      {
+        key: "purchasing-dashboard",
+        label: "Dashboard",
+        path: "/purchasing/dashboard",
+      },
+      {
+        key: "suppliers",
+        label: "Nhà cung cấp",
+        path: "/purchasing/suppliers",
+      },
+      {
+        key: "purchase-orders",
+        label: "Đơn mua hàng",
+        path: "/purchasing/orders",
+      },
+    ],
+  },
+  {
+    key: "accounting",
+    icon: <CalculatorOutlined />,
+    label: "Kế toán",
+    children: [
+      {
+        key: "accounting-dashboard",
+        label: "Dashboard",
+        path: "/accounting/dashboard",
+      },
+      {
+        key: "journal-entries",
+        label: "Bút toán kế toán",
+        path: "/accounting/journal-entries",
       },
     ],
   },

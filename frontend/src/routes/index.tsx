@@ -39,6 +39,15 @@ import { SalesOrdersList } from "@/modules/sales-orders/views/SalesOrdersList";
 import { SalesOrdersDetail } from "@/modules/sales-orders/views/SalesOrdersDetail";
 import { SalesOrdersForm } from "@/modules/sales-orders/views/SalesOrdersForm";
 
+// Purchasing modules
+import SuppliersList from "@/modules/purchasing/views/SuppliersList";
+import PurchaseOrdersList from "@/modules/purchasing/views/PurchaseOrdersList";
+import PurchasingDashboard from "@/modules/purchasing/views/PurchasingDashboard";
+
+// Accounting modules
+import JournalEntriesList from "@/modules/accounting/views/JournalEntriesList";
+import AccountingDashboard from "@/modules/accounting/views/AccountingDashboard";
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -72,6 +81,15 @@ export default function AppRoutes() {
           <Route path={URLS.WAREHOUSE_PRODUCTS} element={<WarehouseProductsList />} />
           <Route path={URLS.WAREHOUSE_IN} element={<WarehouseInList />} />
           <Route path={URLS.WAREHOUSE_OUT} element={<WarehouseOutList />} />
+
+          {/* Purchasing modules */}
+          <Route path="/purchasing/dashboard" element={<PurchasingDashboard />} />
+          <Route path="/purchasing/suppliers" element={<SuppliersList />} />
+          <Route path="/purchasing/orders" element={<PurchaseOrdersList />} />
+
+          {/* Accounting modules */}
+          <Route path="/accounting/dashboard" element={<AccountingDashboard />} />
+          <Route path="/accounting/journal-entries" element={<JournalEntriesList />} />
 
           <Route path={URLS.SALES_ORDERS} element={<SalesOrdersList />} />
           <Route
