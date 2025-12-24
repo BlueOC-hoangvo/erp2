@@ -355,5 +355,209 @@ export class ProductionOrdersService {
       return { ok: true };
     });
   }
+
+  // Tạo Production Orders từ Sales Order
+  static async createFromSalesOrder(salesOrderId: bigint, userId: bigint | null) {
+    return prisma.$transaction(async (tx) => {
+      // 1. Lấy SO với items và breakdowns
+      const so = await tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: {
+          items: {
+            include: {
+              productStyle: true,
+              breakdowns: {
+                include: {
+                  productVariant: { include: { size: true, color: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!so) throw E.notFound("Sales order not found");
+
+      // 2. Tạo MO cho từng item có breakdowns
+      const createdMos = [];
+      for (const soItem of so.items) {
+        if (!soItem.breakdowns.length) continue; // Chỉ tạo MO cho items có breakdown
+
+        // Tính tổng qty từ breakdowns
+        const totalQty = soItem.breakdowns.reduce((sum, bd) => {
+          return sum.add(bd.qty);
+        }, new Prisma.Decimal(0));
+
+        // Tạo MO mới
+        const mo = await tx.productionOrder.create({
+          data: {
+            moNo: await this.generateMoNo(tx),
+            salesOrderItemId: soItem.id,
+            productStyleId: soItem.productStyleId,
+            qtyPlan: totalQty,
+            qtyDone: new Prisma.Decimal(0),
+            status: "DRAFT",
+            createdById: userId,
+            startDate: so.dueDate ?? new Date(), // Sử dụng due date của SO làm start date
+            note: `Tạo từ SO ${so.orderNo} - ${soItem.itemName}`,
+          },
+        });
+
+        // Tạo breakdowns cho MO từ SO breakdowns
+        if (soItem.breakdowns.length) {
+          await tx.productionOrderBreakdown.createMany({
+            data: soItem.breakdowns.map((bd) => ({
+              productionOrderId: mo.id,
+              productVariantId: bd.productVariantId,
+              qtyPlan: bd.qty,
+              qtyDone: new Prisma.Decimal(0),
+            })),
+          });
+        }
+
+        // Auto-generate material requirements từ BOM nếu có
+        try {
+          await this.generateMaterialsFromBomInternal(tx, mo.id, "replace");
+        } catch (error) {
+          // Nếu không có BOM thì bỏ qua
+          console.log(`No BOM found for product style ${soItem.productStyleId}, skipping material requirements`);
+        }
+
+        createdMos.push(mo.id.toString());
+      }
+
+      // 3. Sync status của SO
+      await this.syncSalesOrderStatus(tx, salesOrderId);
+
+      return {
+        ok: true,
+        salesOrderId: salesOrderId.toString(),
+        createdProductionOrders: createdMos,
+        message: `Đã tạo ${createdMos.length} đơn sản xuất từ đơn hàng ${so.orderNo}`,
+      };
+    });
+  }
+
+  // Helper: Generate MO number
+  private static async generateMoNo(tx: Prisma.TransactionClient): Promise<string> {
+    const year = new Date().getFullYear();
+    const month = String(new Date().getMonth() + 1).padStart(2, '0');
+    const prefix = `MO${year}${month}`;
+
+    const lastMo = await tx.productionOrder.findFirst({
+      where: { moNo: { startsWith: prefix } },
+      orderBy: { moNo: 'desc' },
+      select: { moNo: true },
+    });
+
+    if (!lastMo) {
+      return `${prefix}-001`;
+    }
+
+    const parts = lastMo.moNo.split('-');
+    let lastNumber = 0;
+    if (parts.length > 1 && parts[1]) {
+      lastNumber = parseInt(parts[1]) || 0;
+    }
+    const nextNumber = lastNumber + 1;
+    return `${prefix}-${String(nextNumber).padStart(3, '0')}`;
+  }
+
+  // Helper: Sync SO status khi có thay đổi MO
+  private static async syncSalesOrderStatus(tx: Prisma.TransactionClient, salesOrderId: bigint) {
+    const so = await tx.salesOrder.findUnique({
+      where: { id: salesOrderId },
+      select: { status: true },
+    });
+    if (!so) return;
+
+    // Import và gọi sync từ SalesOrdersService
+    const { SalesOrdersService } = await import("../sales-orders/salesOrders.service");
+    await SalesOrdersService.syncStatusByProduction(tx, salesOrderId);
+  }
+
+  // Internal version của generateMaterialsFromBom để dùng trong transaction
+  private static async generateMaterialsFromBomInternal(tx: Prisma.TransactionClient, id: bigint, mode: "replace" | "merge" = "replace") {
+    // 1) Lấy MO
+    const mo = await tx.productionOrder.findUnique({
+      where: { id },
+      select: { id: true, productStyleId: true, qtyPlan: true },
+    });
+    if (!mo) throw E.notFound("Production order not found");
+
+    // 2) Lấy BOM theo productStyleId (ưu tiên isActive=true, mới nhất)
+    const bom = await tx.bom.findFirst({
+      where: { productStyleId: mo.productStyleId, isActive: true },
+      orderBy: { updatedAt: "desc" },
+      include: { lines: true },
+    });
+    if (!bom) throw E.badRequest("No active BOM found for this product style");
+
+    if (!bom.lines.length) {
+      // không có lines => requirements rỗng
+      if (mode === "replace") {
+        await tx.moMaterialRequirement.deleteMany({ where: { productionOrderId: id } });
+      }
+      return;
+    }
+
+    // helper Decimal
+    const plan = new Prisma.Decimal(mo.qtyPlan);
+
+    // 3) Tính requirements
+    const computed = bom.lines.map((l) => {
+      const qtyPerUnit = new Prisma.Decimal(l.qtyPerUnit);
+      const wastage = new Prisma.Decimal(l.wastagePercent ?? 0);
+      const factor = new Prisma.Decimal(1).add(wastage.div(100));
+      const qtyRequired = plan.mul(qtyPerUnit).mul(factor);
+
+      return {
+        itemId: l.itemId,
+        uom: l.uom ?? "pcs",
+        qtyRequired,
+        wastagePercent: wastage,
+      };
+    });
+
+    // 4) Ghi DB theo mode
+    if (mode === "replace") {
+      await tx.moMaterialRequirement.deleteMany({ where: { productionOrderId: id } });
+
+      await tx.moMaterialRequirement.createMany({
+        data: computed.map((c) => ({
+          productionOrderId: id,
+          itemId: c.itemId,
+          uom: c.uom,
+          qtyRequired: c.qtyRequired,
+          qtyIssued: new Prisma.Decimal(0),
+          wastagePercent: c.wastagePercent,
+        })),
+      });
+    } else {
+      // merge: upsert từng item theo unique(productionOrderId,itemId), giữ qtyIssued hiện có
+      for (const c of computed) {
+        await tx.moMaterialRequirement.upsert({
+          where: {
+            productionOrderId_itemId: {
+              productionOrderId: id,
+              itemId: c.itemId,
+            },
+          },
+          create: {
+            productionOrderId: id,
+            itemId: c.itemId,
+            uom: c.uom,
+            qtyRequired: c.qtyRequired,
+            qtyIssued: new Prisma.Decimal(0),
+            wastagePercent: c.wastagePercent,
+          },
+          update: {
+            uom: c.uom,
+            qtyRequired: c.qtyRequired,
+            wastagePercent: c.wastagePercent,
+          },
+        });
+      }
+    }
+  }
   
 }

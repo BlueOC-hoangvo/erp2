@@ -1,216 +1,171 @@
-// Sales Orders Types
+// Sales Orders Types - Backend Aligned
 
 export type SalesOrderStatus = 
-  | 'draft'
-  | 'confirmed'
-  | 'processing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled'
-  | 'completed';
+  | 'DRAFT'
+  | 'CONFIRMED'
+  | 'IN_PRODUCTION'
+  | 'DONE'
+  | 'CANCELLED';
 
-export type SalesOrderType = 
-  | 'sale'
-  | 'purchase'
-  | 'return'
-  | 'exchange';
-
-export type PaymentStatus = 
-  | 'pending'
-  | 'paid'
-  | 'partial'
-  | 'refunded';
+export type SalesOrderBreakdown = {
+  id: string;
+  productVariantId: string;
+  qty: string; // decimal string từ backend
+  productVariant?: {
+    id: string;
+    name: string;
+    sku?: string;
+  };
+};
 
 export type SalesOrderItem = {
   id: string;
-  productId: string;
-  productName?: string;
-  productSku?: string;
-  qty: number;
-  unitPrice: number;
-  totalPrice: number;
-  discountPercent: number;
-  discountAmount: number;
-  taxPercent: number;
-  taxAmount: number;
+  lineNo: number;
+  productStyleId: string;
+  itemName: string;
+  uom: string;
+  qtyTotal: string; // decimal string từ backend
+  unitPrice: string; // decimal string từ backend
+  totalAmount: string; // calculated từ backend
   note?: string;
-  createdAt: string;
-  updatedAt: string;
+  breakdowns: SalesOrderBreakdown[];
+  productStyle?: {
+    id: string;
+    name: string;
+    code: string;
+  };
 };
 
 export type SalesOrder = {
   id: string;
-  orderNumber: string;
+  orderNo: string;
   customerId: string;
-  customerName?: string;
-  customerEmail?: string;
-  orderType: SalesOrderType;
+  customer?: {
+    id: string;
+    name: string;
+    code?: string;
+  };
+  orderDate: string;
+  dueDate?: string;
   status: SalesOrderStatus;
-  paymentStatus: PaymentStatus;
-  paymentMethod: string;
-  currency: string;
-  subtotal: number;
-  shippingFee: number;
-  discountAmount: number;
-  taxAmount: number;
-  totalAmount: number;
-  discountPercent: number;
-  taxEnabled: boolean;
-  taxPercent: number;
-  notes?: string;
-  shippingAddress?: string;
-  billingAddress?: string;
-  expectedDeliveryDate?: string;
-  actualDeliveryDate?: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string;
-  createdBy: string;
-  updatedBy?: string;
+  note?: string;
+  isInternal: boolean;
+  totalAmount: string; // decimal string từ backend
   items: SalesOrderItem[];
-  statusHistory?: SalesOrderStatusHistory[];
-};
-
-export type SalesOrderStatusHistory = {
-  id: string;
-  salesOrderId: string;
-  fromStatus?: SalesOrderStatus;
-  toStatus: SalesOrderStatus;
-  changedBy: string;
-  changedByName?: string;
-  reason?: string;
-  metadata?: Record<string, any>;
-  createdAt: string;
-};
-
-export type WorkOrder = {
-  id: string;
-  workOrderNumber: string;
-  salesOrderId: string;
-  customerId: string;
-  customerName?: string;
-  title: string;
-  description?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  assignedTo?: string;
-  assignedToName?: string;
-  estimatedHours?: number;
-  actualHours: number;
-  startDate?: string;
-  dueDate?: string;
-  completedDate?: string;
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string;
-  createdBy: string;
 };
 
-// API Request/Response Types
+// API Request/Response Types - Backend Aligned
 export type CreateSalesOrderRequest = {
+  orderNo: string;
   customerId: string;
-  orderType: SalesOrderType;
-  paymentMethod: string;
-  currency: string;
-  items: {
-    productId: string;
-    qty: number;
-    unitPrice: number;
-    discountPercent?: number;
-    taxPercent?: number;
-    note?: string;
-  }[];
-  shippingFee?: number;
-  discountAmount?: number;
-  discountPercent?: number;
-  taxEnabled?: boolean;
-  taxPercent?: number;
-  notes?: string;
-  shippingAddress?: string;
-  billingAddress?: string;
-  expectedDeliveryDate?: string;
-};
-
-export type UpdateSalesOrderRequest = {
-  customerId?: string;
-  orderType?: SalesOrderType;
-  paymentMethod?: string;
-  currency?: string;
-  shippingFee?: number;
-  discountAmount?: number;
-  discountPercent?: number;
-  taxEnabled?: boolean;
-  taxPercent?: number;
-  notes?: string;
-  shippingAddress?: string;
-  billingAddress?: string;
-  expectedDeliveryDate?: string;
-};
-
-export type UpdateSalesOrderStatusRequest = {
-  status: SalesOrderStatus;
-  reason?: string;
-  metadata?: Record<string, any>;
-};
-
-export type ConvertToWorkOrderRequest = {
-  title: string;
-  description?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  estimatedHours?: number;
+  orderDate?: string;
   dueDate?: string;
+  status?: SalesOrderStatus;
+  note?: string;
+  isInternal?: boolean;
+  items: Array<{
+    lineNo: number;
+    productStyleId: string;
+    itemName: string;
+    uom?: string;
+    qtyTotal: string;
+    unitPrice: string;
+    note?: string;
+    breakdowns?: Array<{
+      productVariantId: string;
+      qty: string;
+    }>;
+  }>;
 };
 
-export type SalesOrderStats = {
-  totalOrders: number;
-  totalRevenue: number;
-  averageOrderValue: number;
-  ordersByStatus: Record<SalesOrderStatus, number>;
-  ordersByType: Record<SalesOrderType, number>;
-  recentOrders: SalesOrder[];
-  topCustomers: Array<{
-    customerId: string;
-    customerName: string;
-    orderCount: number;
-    totalRevenue: number;
+export type UpdateSalesOrderRequest = Partial<CreateSalesOrderRequest> & {
+  customerId?: string;
+  items?: Array<{
+    lineNo: number;
+    productStyleId: string;
+    itemName: string;
+    uom?: string;
+    qtyTotal: string;
+    unitPrice: string;
+    note?: string;
+    breakdowns?: Array<{
+      productVariantId: string;
+      qty: string;
+    }>;
   }>;
+};
+
+export type SalesOrderQuery = {
+  q?: string;
+  customerId?: string;
+  status?: SalesOrderStatus;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: "orderDate" | "createdAt" | "updatedAt";
+  sortOrder?: "asc" | "desc";
+};
+
+export type SalesOrderResponse = {
+  data: SalesOrder[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };
 
 // Form Types
 export type SalesOrderFormData = {
+  orderNo: string;
   customerId: string;
-  orderType: SalesOrderType;
-  paymentMethod: string;
-  currency: string;
+  orderDate?: string;
+  dueDate?: string;
+  note?: string;
+  isInternal?: boolean;
   items: Array<{
-    productId: string;
-    qty: number;
-    unitPrice: number;
-    discountPercent?: number;
-    taxPercent?: number;
+    lineNo: number;
+    productStyleId: string;
+    itemName: string;
+    uom?: string;
+    qtyTotal: string;
+    unitPrice: string;
     note?: string;
+    breakdowns?: Array<{
+      productVariantId: string;
+      qty: string;
+    }>;
   }>;
-  shippingFee: number;
-  discountAmount: number;
-  discountPercent: number;
-  taxEnabled: boolean;
-  taxPercent: number;
-  notes: string;
-  shippingAddress: string;
-  billingAddress: string;
-  expectedDeliveryDate: string;
 };
 
-// Filter and Search Types
-export type SalesOrderFilters = {
-  status?: SalesOrderStatus[];
-  orderType?: SalesOrderType[];
-  customerId?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  search?: string;
-  page?: number;
-  limit?: number;
-  sortBy?: 'createdAt' | 'updatedAt' | 'orderNumber' | 'totalAmount';
-  sortOrder?: 'asc' | 'desc';
+// UI Helper Types
+export type SalesOrderTableRow = {
+  key: string;
+  orderNo: string;
+  customerName: string;
+  orderDate: string;
+  dueDate?: string;
+  status: SalesOrderStatus;
+  totalAmount: string;
+  actions: string;
+};
+
+// Status colors for UI
+export const SALES_ORDER_STATUS_COLORS: Record<SalesOrderStatus, string> = {
+  DRAFT: 'default',
+  CONFIRMED: 'blue',
+  IN_PRODUCTION: 'orange',
+  DONE: 'green',
+  CANCELLED: 'red',
+};
+
+// Status labels in Vietnamese
+export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
+  DRAFT: 'Nháp',
+  CONFIRMED: 'Đã xác nhận',
+  IN_PRODUCTION: 'Đang sản xuất',
+  DONE: 'Hoàn thành',
+  CANCELLED: 'Đã hủy',
 };

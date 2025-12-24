@@ -51,6 +51,17 @@ export class ProductionOrdersController {
     try { return ok(res, await ProductionOrdersService.cancel(req.validated!.params.id)); }
     catch (e) { return next(e); }
   }
+
+  // Tạo Production Orders từ Sales Order
+  static async createFromSalesOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const salesOrderId: bigint = req.validated!.params.salesOrderId;
+      const userId: bigint | null = req.user?.id ?? null;
+      return ok(res, await ProductionOrdersService.createFromSalesOrder(salesOrderId, userId));
+    } catch (e) {
+      return next(e);
+    }
+  }
   
   
 }

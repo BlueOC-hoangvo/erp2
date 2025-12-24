@@ -8,6 +8,12 @@ export const URLS = {
   SALES_PRODUCTS: "/sales/products",
   SALES_ORDERS: "/sales-orders",
 
+  // Product Management
+  PRODUCT_STYLES: "/product-styles/styles",
+  COLORS: "/product-styles/colors",
+  SIZES: "/product-styles/sizes", 
+  PRODUCT_VARIANTS: "/product-styles/variants",
+
   SALES_QUOTATIONS: "/sales/quotations",
   SALES_QUOTATION_CREATE: "/sales/quotations/create",
   SALES_QUOTATION_DETAIL: (id: string | number) => `/sales/quotations/${id}`,

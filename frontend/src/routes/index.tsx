@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "@/modules/auth/components/ProtectedRoute";
 import MainLayout from "@/components/layout/MainLayout";
-import LoginView from "@/modules/auth/views/LoginView";
+import { LoginPage } from "@/modules/auth/pages/LoginPage";
 import ForbiddenPage from "@/components/error/403";
 import NotFoundPage from "@/components/error/404";
 import { URLS } from "./urls";
@@ -48,10 +48,16 @@ import PurchasingDashboard from "@/modules/purchasing/views/PurchasingDashboard"
 import JournalEntriesList from "@/modules/accounting/views/JournalEntriesList";
 import AccountingDashboard from "@/modules/accounting/views/AccountingDashboard";
 
+// Product Management modules
+import ProductStyles from "@/modules/product-styles/views/ProductStyles";
+import Colors from "@/modules/product-styles/views/Colors";
+import Sizes from "@/modules/product-styles/views/Sizes";
+import ProductVariants from "@/modules/product-styles/views/ProductVariants";
+
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path={URLS.LOGIN} element={<LoginView />} />
+      <Route path={URLS.LOGIN} element={<LoginPage />} />
       <Route path={URLS.FORBIDDEN} element={<ForbiddenPage />} />
 
       <Route element={<ProtectedRoute />}>
@@ -117,6 +123,12 @@ export default function AppRoutes() {
             path="/sales/quotations/:id/edit"
             element={<QuotationForm />}
           />
+
+          {/* Product Management routes */}
+          <Route path={URLS.PRODUCT_STYLES} element={<ProductStyles />} />
+          <Route path={URLS.COLORS} element={<Colors />} />
+          <Route path={URLS.SIZES} element={<Sizes />} />
+          <Route path={URLS.PRODUCT_VARIANTS} element={<ProductVariants />} />
 
           <Route path={URLS.FILES} element={<Files />} />
           <Route path={URLS.AUDIT_LOGS} element={<AuditLogs />} />

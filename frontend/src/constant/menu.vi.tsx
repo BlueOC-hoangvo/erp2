@@ -10,6 +10,10 @@ import {
   BuildOutlined,
   ShoppingOutlined,
   CalculatorOutlined,
+  AppstoreOutlined,
+  ClusterOutlined,
+  FormatPainterOutlined,
+  BorderOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { URLS } from "@/routes/urls";
@@ -53,6 +57,33 @@ export const MENU_VI: AppMenuItem[] = [
         key: "products",
         label: "Sản phẩm",
         path: URLS.SALES_PRODUCTS,
+      },
+    ],
+  },
+  {
+    key: "product-management",
+    icon: <AppstoreOutlined />,
+    label: "Quản lý sản phẩm",
+    children: [
+      {
+        key: "product-styles",
+        label: "Kiểu dáng",
+        path: URLS.PRODUCT_STYLES,
+      },
+      {
+        key: "colors",
+        label: "Màu sắc",
+        path: URLS.COLORS,
+      },
+      {
+        key: "sizes",
+        label: "Kích thước",
+        path: URLS.SIZES,
+      },
+      {
+        key: "product-variants",
+        label: "Biến thể sản phẩm",
+        path: URLS.PRODUCT_VARIANTS,
       },
     ],
   },

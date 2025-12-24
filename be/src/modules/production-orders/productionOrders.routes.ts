@@ -23,6 +23,9 @@ r.post(
   r.post("/:id/release", auth, validate(zIdParam, "params"), ProductionOrdersController.release);
   r.post("/:id/start", auth, validate(zIdParam, "params"), ProductionOrdersController.start);
   r.post("/:id/done", auth, validate(zIdParam, "params"), ProductionOrdersController.done);
-  r.post("/:id/cancel", auth, validate(zIdParam, "params"), ProductionOrdersController.cancel);
+r.post("/:id/cancel", auth, validate(zIdParam, "params"), ProductionOrdersController.cancel);
+
+// Tạo Production Orders từ Sales Order
+r.post("/from-sales-order/:salesOrderId", auth, validate(zIdParam, "params"), ProductionOrdersController.createFromSalesOrder);
   
 export default r;
