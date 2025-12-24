@@ -8,7 +8,7 @@ import {
   verifyRefreshToken,
 } from "../../common/tokens";
 import { env } from "../../config/env";
-
+import { writeAuditLog } from "../../common/audit";
 
 function addDays(d: Date, days: number) {
   const x = new Date(d);
@@ -57,7 +57,12 @@ export class AuthService {
       },
     });
 
-    
+    await writeAuditLog({
+      actorUserId: user.id,
+      action: "auth.login",
+      metadata: { ip, ua: userAgent },
+    });
+
     return {
       accessToken,
       refreshToken,

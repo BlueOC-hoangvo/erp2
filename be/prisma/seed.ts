@@ -4,136 +4,114 @@ import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
-// Chỉ giữ các permission hiện có / sẽ dùng ngay
-const PERMS: Array<{ code: string; name: string; module: string }> = [
-  // System/User Management
-  { code: "system.user.read", name: "Xem người dùng", module: "system" },
-  { code: "system.user.create", name: "Tạo người dùng", module: "system" },
-  { code: "system.user.update", name: "Sửa người dùng", module: "system" },
-  { code: "system.user.delete", name: "Xoá người dùng", module: "system" },
-  { code: "system.user.reset_password", name: "Reset mật khẩu", module: "system" },
+const PERMS = [
+  // Admin/RBAC
+  { code: "admin.user.read", name: "Read users", module: "admin" },
+  { code: "admin.user.create", name: "Create users", module: "admin" },
+  { code: "admin.user.update", name: "Update users", module: "admin" },
+  { code: "admin.user.delete", name: "Delete users", module: "admin" },
+  { code: "admin.role.read", name: "Read roles", module: "admin" },
+  { code: "admin.role.create", name: "Create roles", module: "admin" },
+  { code: "admin.role.update", name: "Update roles", module: "admin" },
+  { code: "admin.role.delete", name: "Delete roles", module: "admin" },
+  { code: "admin.permission.read", name: "Read permissions", module: "admin" },
+  {
+    code: "admin.rbac.assign",
+    name: "Assign roles/permissions",
+    module: "admin",
+  },
 
-  // Roles/Permissions
-  { code: "system.role.read", name: "Xem vai trò", module: "system" },
-  { code: "system.role.create", name: "Tạo vai trò", module: "system" },
-  { code: "system.role.update", name: "Sửa vai trò", module: "system" },
-  { code: "system.role.delete", name: "Xoá vai trò", module: "system" },
-  { code: "system.permission.read", name: "Xem quyền", module: "system" },
-  { code: "system.rbac.assign", name: "Gán role/permission", module: "system" },
+  // Sales/Customers
+  { code: "sales.customer.read", name: "Read customers", module: "sales" },
+  { code: "sales.customer.create", name: "Create customers", module: "sales" },
+  { code: "sales.customer.update", name: "Update customers", module: "sales" },
+  { code: "sales.customer.delete", name: "Delete customers", module: "sales" },
 
-  // Sales/Customers (module bạn làm ngay)
-  { code: "sales.customer.read", name: "Xem khách hàng", module: "sales" },
-  { code: "sales.customer.create", name: "Tạo khách hàng", module: "sales" },
-  { code: "sales.customer.update", name: "Sửa khách hàng", module: "sales" },
-  { code: "sales.customer.delete", name: "Xoá khách hàng", module: "sales" },
+  // Files
+  { code: "files.upload", name: "Upload files", module: "files" },
+  { code: "files.attach", name: "Attach files", module: "files" },
+  { code: "files.read", name: "Read files", module: "files" },
 
-  // Sales Orders (schema có sẵn, bạn sẽ làm sau)
-  { code: "sales.order.read", name: "Xem đơn hàng", module: "sales" },
-  { code: "sales.order.create", name: "Tạo đơn hàng", module: "sales" },
-  { code: "sales.order.update", name: "Sửa đơn hàng", module: "sales" },
-  { code: "sales.order.delete", name: "Xoá đơn hàng", module: "sales" },
+  // Audit
+  { code: "audit.read", name: "Read audit logs", module: "audit" },
 ];
-
-const SALES_PERM_CODES = [
-  "sales.customer.read",
-  "sales.customer.create",
-  "sales.customer.update",
-  "sales.customer.delete",
-
-  // để sẵn cho bước Sales Order
-  "sales.order.read",
-  "sales.order.create",
-  "sales.order.update",
-  "sales.order.delete",
-];
-
-function requireEnv(name: string, fallback?: string) {
-  const v = process.env[name] ?? fallback;
-  if (!v) throw new Error(`Missing env ${name}`);
-  return v;
-}
 
 async function main() {
-  const adminEmail = requireEnv("SEED_ADMIN_EMAIL", "admin@erp.local");
-  const adminPassword = requireEnv("SEED_ADMIN_PASSWORD", "Admin@123");
-
-  await prisma.$transaction(async (tx) => {
-    // 1) permissions: create missing + update name/module
-    await tx.permission.createMany({ data: PERMS, skipDuplicates: true });
-    for (const p of PERMS) {
-      await tx.permission.update({
-        where: { code: p.code },
-        data: { name: p.name, module: p.module },
-      });
-    }
-
-    // 2) roles
-    const adminRole = await tx.role.upsert({
-      where: { code: "admin" },
-      update: { name: "Administrator" },
-      create: { code: "admin", name: "Administrator" },
+  // permissions
+  for (const p of PERMS) {
+    await prisma.permission.upsert({
+      where: { code: p.code },
+      update: { name: p.name, module: p.module },
+      create: p,
     });
+  }
 
-    const salesRole = await tx.role.upsert({
-      where: { code: "sales" },
-      update: { name: "Sales" },
-      create: { code: "sales", name: "Sales" },
-    });
-
-    // 3) permissions map
-    const perms = await tx.permission.findMany({ select: { id: true, code: true } });
-    const permIdByCode = new Map(perms.map((p) => [p.code, p.id]));
-
-    // 4) admin gets ALL current perms
-    await tx.rolePermission.deleteMany({ where: { roleId: adminRole.id } });
-    await tx.rolePermission.createMany({
-      data: perms.map((p) => ({ roleId: adminRole.id, permissionId: p.id })),
-      skipDuplicates: true,
-    });
-
-    // 5) sales gets subset perms (customer + order)
-    const salesPermIds: bigint[] = [];
-    for (const code of SALES_PERM_CODES) {
-      const id = permIdByCode.get(code);
-      if (!id) throw new Error(`Missing permission code in DB: ${code}`);
-      salesPermIds.push(id);
-    }
-
-    await tx.rolePermission.deleteMany({ where: { roleId: salesRole.id } });
-    await tx.rolePermission.createMany({
-      data: salesPermIds.map((permissionId) => ({ roleId: salesRole.id, permissionId })),
-      skipDuplicates: true,
-    });
-
-    // 6) admin user
-    const passwordHash = await bcrypt.hash(adminPassword, 10);
-    const adminUser = await tx.user.upsert({
-      where: { email: adminEmail },
-      update: { fullName: "Admin", passwordHash, isActive: true },
-      create: { email: adminEmail, fullName: "Admin", passwordHash, isActive: true },
-    });
-
-    // 7) assign admin role
-    await tx.userRole.upsert({
-      where: { userId_roleId: { userId: adminUser.id, roleId: adminRole.id } },
-      update: {},
-      create: { userId: adminUser.id, roleId: adminRole.id },
-    });
+  // roles
+  const adminRole = await prisma.role.upsert({
+    where: { code: "admin" },
+    update: { name: "Administrator" },
+    create: { code: "admin", name: "Administrator" },
   });
 
-  console.log("✅ Seed done.");
-  console.log(
-    `Admin: ${process.env.SEED_ADMIN_EMAIL ?? "admin@erp.local"} / ${
-      process.env.SEED_ADMIN_PASSWORD ?? "Admin@123"
-    }`
-  );
+  const salesRole = await prisma.role.upsert({
+    where: { code: "sales" },
+    update: { name: "Sales" },
+    create: { code: "sales", name: "Sales" },
+  });
+
+  const perms = await prisma.permission.findMany();
+  const permsByCode = new Map(perms.map((x) => [x.code, x.id]));
+
+  // admin gets all perms
+  await prisma.rolePermission.deleteMany({ where: { roleId: adminRole.id } });
+  await prisma.rolePermission.createMany({
+    data: perms.map((p) => ({ roleId: adminRole.id, permissionId: p.id })),
+  });
+
+  // sales gets customer perms + files upload/read/attach
+  const salesPermCodes = [
+    "sales.customer.read",
+    "sales.customer.create",
+    "sales.customer.update",
+    "sales.customer.delete",
+    "files.upload",
+    "files.attach",
+    "files.read",
+  ];
+  await prisma.rolePermission.deleteMany({ where: { roleId: salesRole.id } });
+  await prisma.rolePermission.createMany({
+    data: salesPermCodes.map((code) => ({
+      roleId: salesRole.id,
+      permissionId: permsByCode.get(code)!,
+    })),
+  });
+
+  // admin user
+  const passwordHash = await bcrypt.hash("Admin@123", 10);
+  const adminUser = await prisma.user.upsert({
+    where: { email: "admin@erp.local" },
+    update: { fullName: "Admin", passwordHash, isActive: true },
+    create: {
+      email: "admin@erp.local",
+      fullName: "Admin",
+      passwordHash,
+      isActive: true,
+    },
+  });
+
+  // assign admin role
+  await prisma.userRole.upsert({
+    where: { userId_roleId: { userId: adminUser.id, roleId: adminRole.id } },
+    update: {},
+    create: { userId: adminUser.id, roleId: adminRole.id },
+  });
+
+  console.log("Seed done. Admin: admin@erp.local / Admin@123");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seed failed:", e);
+    console.error(e);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(async () => prisma.$disconnect());

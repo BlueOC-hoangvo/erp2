@@ -1,27 +1,56 @@
 import { Router } from "express";
-import { validate } from "../../middleware/validate";
 import { auth } from "../../middleware/auth";
-import {
-  customerCreateDto,
-  customerUpdateDto,
-  customerQueryDto,
-  customerNoteCreateDto,
-  zIdParam,
-  zCustomerNoteParam,
-} from "./customers.dto";
+import { permit } from "../../middleware/permit";
+import { validate } from "../../middleware/validate";
 import { CustomersController } from "./customers.controller";
+import { CreateCustomerDTO, UpdateCustomerDTO } from "./customers.dto";
+import { zIdParam } from "../../common/zod";
+import { ListQueryDTO } from "../../common/query.dto";
 
-const r = Router();
+export function customersRoutes() {
+  const r = Router();
 
-r.get("/", validate(customerQueryDto, "query"), CustomersController.list);
-r.get("/:id", validate(zIdParam, "params"), CustomersController.get);
+  r.get(
+    "/",
+    auth,
+    permit("sales.customer.read"),
+    validate(ListQueryDTO, "query"),
+    CustomersController.list
+  );
 
-r.post("/", auth, validate(customerCreateDto, "body"), CustomersController.create);
-r.put("/:id", auth, validate(zIdParam, "params"), validate(customerUpdateDto, "body"), CustomersController.update);
-r.delete("/:id", auth, validate(zIdParam, "params"), CustomersController.remove);
+  r.post(
+    "/",
+    auth,
+    permit("sales.customer.create"),
+    validate(CreateCustomerDTO),
+    CustomersController.create
+  );
 
-r.get("/:id/notes", validate(zIdParam, "params"), CustomersController.listNotes);
-r.post("/:id/notes", auth, validate(zIdParam, "params"), validate(customerNoteCreateDto, "body"), CustomersController.createNote);
-r.delete("/:id/notes/:noteId", auth, validate(zCustomerNoteParam, "params"), CustomersController.removeNote);
+  // ✅ validate params.id => bigint
+  r.get(
+    "/:id",
+    auth,
+    permit("sales.customer.read"),
+    validate(zIdParam, "params"),
+    CustomersController.detail
+  );
 
-export default r;
+  r.put(
+    "/:id",
+    auth,
+    permit("sales.customer.update"),
+    validate(zIdParam, "params"),
+    validate(UpdateCustomerDTO),
+    CustomersController.update
+  );
+
+  r.delete(
+    "/:id",
+    auth,
+    permit("sales.customer.delete"),
+    validate(zIdParam, "params"),
+    CustomersController.remove
+  );
+
+  return r;
+}

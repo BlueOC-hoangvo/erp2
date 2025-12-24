@@ -7,653 +7,692 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//
-// ===================== ENUMS =====================
-//
-
-enum SalesOrderStatus {
-  DRAFT
-  CONFIRMED
-  IN_PRODUCTION
-  DONE
-  CANCELLED
-}
-
-enum ProductionOrderStatus {
-  DRAFT
-  RELEASED
-  RUNNING
-  DONE
-  CANCELLED
-}
-
-enum PurchaseOrderStatus {
-  DRAFT
-  CONFIRMED
-  RECEIVING
-  RECEIVED
-  CANCELLED
-}
-
-enum StockMoveType {
-  RECEIPT
-  ISSUE
-  OUT
-  ADJUST
-  TRANSFER
-}
-
-enum StockMoveStatus {
-  DRAFT
-  POSTED
-  CANCELLED
-}
-
-enum ItemType {
-  FABRIC
-  ACCESSORY
-  PACKING
-  OTHER
-}
-
-//
-// ===================== RBAC / AUTH =====================
-//
-
 model User {
   id           BigInt    @id @default(autoincrement())
-  email        String    @unique @db.VarChar(150)
-  passwordHash String    @db.VarChar(255)
-  fullName     String    @db.VarChar(150)
+  email        String    @unique
+  passwordHash String
+  fullName     String
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  roles         UserRole[]
-  refreshTokens RefreshToken[]
-
-  // Business relations
-  customerNotes     CustomerNote[]
-  salesOrders       SalesOrder[]
-  purchaseOrders    PurchaseOrder[]   @relation("PurchaseOrders_CreatedBy")
-  stockMoves        StockMove[]       @relation("StockMoves_CreatedBy")
-  productionOrders  ProductionOrder[] @relation("ProductionOrders_CreatedBy")
-
-  @@map("users")
+  roles              UserRole[]
+  refreshTokens      RefreshToken[]
+  uploadedFiles      File[]           @relation("UploadedFiles")
+  auditLogs          AuditLog[]       @relation("ActorLogs")
+  statusChanges      StatusHistory[]  @relation("StatusChangedBy")
+  entityFilesCreated EntityFile[]     @relation("EntityFilesCreatedBy")
+  customerNotes      CustomerNote[]
+  salesOrders        SalesOrder[]
+  quotations         Quotation[]
+  productionPlans    ProductionPlan[]
 }
 
 model Role {
   id          BigInt   @id @default(autoincrement())
-  code        String   @unique @db.VarChar(50)
-  name        String   @db.VarChar(150)
-  description String?  @db.VarChar(255)
+  code        String   @unique
+  name        String
+  description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   users       UserRole[]
   permissions RolePermission[]
-
-  @@map("roles")
 }
 
 model Permission {
   id        BigInt   @id @default(autoincrement())
-  code      String   @unique @db.VarChar(80)
-  name      String   @db.VarChar(150)
-  module    String   @db.VarChar(80)
+  code      String   @unique
+  name      String
+  module    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   roles RolePermission[]
-
-  @@map("permissions")
 }
 
 model UserRole {
   userId BigInt
   roleId BigInt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
 
   @@id([userId, roleId])
   @@index([roleId])
-  @@map("role_user")
 }
 
 model RolePermission {
   roleId       BigInt
   permissionId BigInt
 
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
 
   @@id([roleId, permissionId])
   @@index([permissionId])
-  @@map("role_permission")
 }
 
 model RefreshToken {
   id        BigInt    @id @default(autoincrement())
   userId    BigInt
-  tokenHash String    @unique @db.VarChar(255)
+  tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?
   createdAt DateTime  @default(now())
-  userAgent String?   @db.VarChar(255)
-  ip        String?   @db.VarChar(64)
+  userAgent String?
+  ip        String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
-  @@map("refresh_tokens")
 }
 
-//
-// ===================== CUSTOMERS =====================
-//
+model File {
+  id           BigInt   @id @default(autoincrement())
+  storage      String
+  path         String
+  url          String?
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  uploadedById BigInt
+  createdAt    DateTime @default(now())
+
+  uploadedBy  User         @relation("UploadedFiles", fields: [uploadedById], references: [id])
+  entityFiles EntityFile[]
+
+  @@index([uploadedById])
+}
+
+model EntityFile {
+  id          BigInt   @id @default(autoincrement())
+  entityType  String
+  entityId    BigInt
+  fileId      BigInt
+  tag         String?
+  createdById BigInt
+  createdAt   DateTime @default(now())
+
+  file      File @relation(fields: [fileId], references: [id])
+  createdBy User @relation("EntityFilesCreatedBy", fields: [createdById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([fileId])
+}
+
+model AuditLog {
+  id           BigInt   @id @default(autoincrement())
+  actorUserId  BigInt?
+  action       String
+  entityType   String?
+  entityId     BigInt?
+  beforeJson   Json?
+  afterJson    Json?
+  metadataJson Json?
+  createdAt    DateTime @default(now())
+
+  actorUser User? @relation("ActorLogs", fields: [actorUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model StatusHistory {
+  id          BigInt   @id @default(autoincrement())
+  entityType  String
+  entityId    BigInt
+  fromStatus  String?
+  toStatus    String
+  note        String?
+  changedById BigInt
+  createdAt   DateTime @default(now())
+
+  changedBy User @relation("StatusChangedBy", fields: [changedById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([changedById])
+  @@index([createdAt])
+}
 
 model Customer {
-  id        BigInt   @id @default(autoincrement())
-  code      String?  @unique @db.VarChar(50)
-  name      String   @db.VarChar(200)
-  taxCode   String?  @db.VarChar(50)
-  phone     String?  @db.VarChar(30)
-  email     String?  @db.VarChar(150)
-  address   String?  @db.VarChar(255)
-  note      String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               BigInt            @id @default(autoincrement())
+  code             String            @unique
+  name             String
+  phone            String?
+  email            String?
+  address          String?
+  status           String            @default("active")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  customerContacts CustomerContact[]
+  customerNotes    CustomerNote[]
+  customerHandbook CustomerHandbook?
+  salesOrders      SalesOrder[]
+  quotations       Quotation[]
 
-  notes       CustomerNote[]
-  salesOrders SalesOrder[]
-
-  // list/search nhanh
   @@index([name])
-  @@index([phone])
+  @@index([status])
+}
 
-  @@map("customers")
+// ========================
+// SALES: Customer details
+// ========================
+model CustomerContact {
+  id         BigInt   @id @default(autoincrement())
+  customerId BigInt
+  name       String
+  phone      String?
+  email      String?
+  position   String?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
 }
 
 model CustomerNote {
-  id         BigInt   @id @default(autoincrement())
-  customerId BigInt
-  userId     BigInt?
-  content    String   @db.Text
-  createdAt  DateTime @default(now())
-
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([customerId])
-  @@index([userId])
-  @@map("customer_notes")
-}
-
-//
-// ===================== PRODUCT (STYLE/SIZE/COLOR/VARIANT) =====================
-//
-
-model ProductStyle {
-  id        BigInt   @id @default(autoincrement())
-  code      String?  @unique @db.VarChar(50)
-  name      String   @db.VarChar(200)
-  note      String?  @db.VarChar(255)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  variants          ProductVariant[]
-  salesOrderItems   SalesOrderItem[]
-  productionOrders  ProductionOrder[]
-  boms              Bom[]
-
-  @@map("product_style")
-}
-
-model Size {
-  id        BigInt   @id @default(autoincrement())
-  code      String   @unique @db.VarChar(30)
-  name      String?  @db.VarChar(80)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  variants ProductVariant[]
-
-  @@map("sizes")
-}
-
-model Color {
-  id        BigInt   @id @default(autoincrement())
-  code      String   @unique @db.VarChar(30)
-  name      String   @db.VarChar(80)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  variants ProductVariant[]
-
-  @@map("colors")
-}
-
-model ProductVariant {
-  id             BigInt   @id @default(autoincrement())
-  sku            String?  @unique @db.VarChar(60)
-  productStyleId BigInt
-  sizeId         BigInt
-  colorId        BigInt
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  productStyle ProductStyle @relation(fields: [productStyleId], references: [id], onDelete: Restrict)
-  size         Size         @relation(fields: [sizeId], references: [id], onDelete: Restrict)
-  color        Color        @relation(fields: [colorId], references: [id], onDelete: Restrict)
-
-  soBreakdowns   SoItemVariantBreakdown[]
-  moBreakdowns   ProductionOrderBreakdown[]
-  stockMoveLines StockMoveLine[]
-
-  @@unique([productStyleId, sizeId, colorId])
-  @@index([productStyleId])
-  @@index([sizeId])
-  @@index([colorId])
-  @@map("product_variant")
-}
-
-//
-// ===================== SALES (SO) + BREAKDOWN =====================
-//
-
-model SalesOrder {
-  id          BigInt           @id @default(autoincrement())
-  orderNo     String           @unique @db.VarChar(50)
+  id          BigInt   @id @default(autoincrement())
   customerId  BigInt
+  note        String   @db.Text
   createdById BigInt?
-  orderDate   DateTime         @default(now())
-  dueDate     DateTime?
-  status      SalesOrderStatus @default(DRAFT)
-  note        String?          @db.Text
-  isInternal  Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime @default(now())
 
-  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
-
-  items      SalesOrderItem[]
-  stockMoves StockMove[] @relation("StockMove_SalesOrder")
+  customer  Customer @relation(fields: [customerId], references: [id])
+  createdBy User?    @relation(fields: [createdById], references: [id])
 
   @@index([customerId])
   @@index([createdById])
+  @@index([createdAt])
+}
 
-  // list/filter theo màn hình
-  @@index([status, orderDate])
-  @@index([customerId, orderDate])
+model CustomerHandbook {
+  id                BigInt   @id @default(autoincrement())
+  customerId        BigInt   @unique
+  generalInfo       Json?
+  persona           Json?
+  carePolicy        Json?
+  consultingHistory Json?
+  equipments        Json?
+  updatedAt         DateTime @updatedAt
 
-  @@map("sale_orders")
+  customer Customer @relation(fields: [customerId], references: [id])
+}
+
+// ========================
+// SALES: Products / Orders / Quotations
+// ========================
+model Product {
+  id           BigInt    @id @default(autoincrement())
+  sku          String    @unique
+  name         String
+  unit         String?
+  width        Decimal?  @db.Decimal(10, 2)
+  height       Decimal?  @db.Decimal(10, 2)
+  length       Decimal?  @db.Decimal(10, 2)
+  weight       Decimal?  @db.Decimal(10, 2)
+  standardCost Decimal?  @db.Decimal(18, 2)
+  salePrice    Decimal?  @db.Decimal(18, 2)
+  safetyStock  Int?
+  status       String    @default("active")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  orderItems        SalesOrderItem[]
+  quotationItems    QuotationItem[]
+  planItems         ProductionPlanItem[]
+  shipmentItems     ShipmentItem[]
+  inboundItems      InboundItem[]
+  outboundItems     OutboundItem[]
+  stockMoves        StockMove[]
+  workOrders        WorkOrder[]
+  inventoryBalances InventoryBalance[]
+
+  @@index([name])
+  @@index([status])
+}
+
+model SalesOrder {
+  id              BigInt    @id @default(autoincrement())
+  code            String    @unique
+  customerId      BigInt
+  orderType       String
+  paymentMethod   String?
+  deliveryAddress String?
+  deliveryDate    DateTime?
+  currency        String    @default("VND")
+
+  subtotal       Decimal @default(0) @db.Decimal(18, 2)
+  shippingFee    Decimal @default(0) @db.Decimal(18, 2)
+  discountAmount Decimal @default(0) @db.Decimal(18, 2)
+  taxEnabled     Boolean @default(false)
+  taxAmount      Decimal @default(0) @db.Decimal(18, 2)
+  total          Decimal @default(0) @db.Decimal(18, 2)
+
+  status      String    @default("draft")
+  createdById BigInt?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  customer       Customer         @relation(fields: [customerId], references: [id])
+  createdBy      User?            @relation(fields: [createdById], references: [id])
+  items          SalesOrderItem[]
+  workOrders     WorkOrder[]
+  outboundOrders OutboundOrder[]
+  shipments      Shipment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model SalesOrderItem {
-  id             BigInt   @id @default(autoincrement())
-  salesOrderId   BigInt
-  lineNo         Int
-  productStyleId BigInt
-  itemName       String   @db.VarChar(200)
-  uom            String   @default("pcs") @db.VarChar(20)
-  qtyTotal       Decimal  @db.Decimal(18, 3)
-  unitPrice      Decimal  @db.Decimal(18, 2)
-  amount         Decimal  @db.Decimal(18, 2)
-  note           String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           BigInt  @id @default(autoincrement())
+  salesOrderId BigInt
+  productId    BigInt
+  qty          Int
+  unitPrice    Decimal @db.Decimal(18, 2)
+  lineTotal    Decimal @db.Decimal(18, 2)
+  note         String?
 
-  salesOrder   SalesOrder   @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  productStyle ProductStyle @relation(fields: [productStyleId], references: [id], onDelete: Restrict)
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
+  product    Product    @relation(fields: [productId], references: [id])
 
-  breakdowns       SoItemVariantBreakdown[]
-  productionOrders ProductionOrder[]
-
-  @@unique([salesOrderId, lineNo])
-  @@index([productStyleId])
   @@index([salesOrderId])
-
-  @@map("sale_orders_item")
+  @@index([productId])
 }
 
-model SoItemVariantBreakdown {
-  id               BigInt  @id @default(autoincrement())
-  salesOrderItemId BigInt
-  productVariantId BigInt
-  qty              Decimal @db.Decimal(18, 3)
+model Quotation {
+  id             BigInt    @id @default(autoincrement())
+  code           String    @unique
+  customerId     BigInt
+  validUntil     DateTime?
+  status         String    @default("draft")
+  subtotal       Decimal   @default(0) @db.Decimal(18, 2)
+  discountAmount Decimal   @default(0) @db.Decimal(18, 2)
+  total          Decimal   @default(0) @db.Decimal(18, 2)
 
-  salesOrderItem SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
-  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
-
-  @@unique([salesOrderItemId, productVariantId])
-  @@index([productVariantId])
-  @@map("so_item_variant_breakdowns")
-}
-
-//
-// ===================== PRODUCTION (MO) + BREAKDOWN + MATERIAL REQUIREMENTS =====================
-//
-
-model ProductionOrder {
-  id               BigInt                @id @default(autoincrement())
-  moNo             String                @unique @db.VarChar(50)
-  salesOrderItemId BigInt?
-  productStyleId   BigInt
-  createdById      BigInt?
-  qtyPlan          Decimal               @db.Decimal(18, 3)
-  qtyDone          Decimal               @db.Decimal(18, 3) @default(0)
-  startDate        DateTime?
-  dueDate          DateTime?
-  status           ProductionOrderStatus @default(DRAFT)
-  note             String?               @db.Text
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-
-  salesOrderItem SalesOrderItem? @relation(fields: [salesOrderItemId], references: [id], onDelete: SetNull)
-  productStyle   ProductStyle    @relation(fields: [productStyleId], references: [id], onDelete: Restrict)
-  createdBy      User?           @relation("ProductionOrders_CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  breakdowns           ProductionOrderBreakdown[]
-  materialRequirements MoMaterialRequirement[]
-  stockMoves           StockMove[] @relation("StockMove_ProductionOrder")
-
-  @@index([salesOrderItemId])
-  @@index([productStyleId])
-  @@index([createdById])
-
-  // list/kanban theo trạng thái + hạn
-  @@index([status])
-  @@index([status, dueDate])
-
-  @@map("production_order")
-}
-
-model ProductionOrderBreakdown {
-  id                BigInt  @id @default(autoincrement())
-  productionOrderId BigInt
-  productVariantId  BigInt
-  qtyPlan           Decimal @db.Decimal(18, 3)
-  qtyDone           Decimal @db.Decimal(18, 3) @default(0)
-
-  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
-  productVariant  ProductVariant  @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
-
-  @@unique([productionOrderId, productVariantId])
-  @@index([productVariantId])
-  @@map("production_order_breakdowns")
-}
-
-model MoMaterialRequirement {
-  id                BigInt   @id @default(autoincrement())
-  productionOrderId BigInt
-  itemId            BigInt
-  uom               String   @default("pcs") @db.VarChar(20)
-  qtyRequired       Decimal  @db.Decimal(18, 3)
-  qtyIssued         Decimal  @db.Decimal(18, 3) @default(0)
-  wastagePercent    Decimal  @db.Decimal(8, 2)  @default(0)
-  createdAt         DateTime @default(now())
-
-  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
-  item            Item            @relation(fields: [itemId], references: [id], onDelete: Restrict)
-
-  @@unique([productionOrderId, itemId])
-  @@index([itemId])
-  @@map("mo_material_requirement")
-}
-
-//
-// ===================== ITEMS + BOM =====================
-//
-
-model Item {
-  id        BigInt   @id @default(autoincrement())
-  sku       String?  @unique @db.VarChar(60)
-  name      String   @db.VarChar(200)
-  itemType  ItemType
-  baseUom   String   @default("pcs") @db.VarChar(20)
-  isActive  Boolean  @default(true)
-  note      String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  bomLines       BomLine[]
-  moRequirements MoMaterialRequirement[]
-  purchaseLines  PurchaseOrderLine[]
-  stockMoveLines StockMoveLine[]
-
-  @@index([itemType])
-  @@map("items")
-}
-
-model Bom {
-  id             BigInt   @id @default(autoincrement())
-  code           String?  @unique @db.VarChar(50)
-  productStyleId BigInt
-  name           String?  @db.VarChar(200)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  productStyle ProductStyle @relation(fields: [productStyleId], references: [id], onDelete: Cascade)
-  lines        BomLine[]
-
-  @@index([productStyleId])
-  @@map("boms")
-}
-
-model BomLine {
-  id             BigInt  @id @default(autoincrement())
-  bomId          BigInt
-  itemId         BigInt
-  uom            String  @default("pcs") @db.VarChar(20)
-  qtyPerUnit     Decimal @db.Decimal(18, 6)
-  wastagePercent Decimal @db.Decimal(8, 2) @default(0)
-
-  bom  Bom  @relation(fields: [bomId], references: [id], onDelete: Cascade)
-  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
-
-  @@unique([bomId, itemId])
-  @@index([itemId])
-  @@map("bom_lines")
-}
-
-//
-// ===================== SUPPLIERS + PURCHASING =====================
-//
-
-model Supplier {
-  id        BigInt   @id @default(autoincrement())
-  code      String?  @unique @db.VarChar(50)
-  name      String   @db.VarChar(200)
-  taxCode   String?  @db.VarChar(50)
-  phone     String?  @db.VarChar(30)
-  email     String?  @db.VarChar(150)
-  address   String?  @db.VarChar(255)
-  note      String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  purchaseOrders PurchaseOrder[]
-
-  @@map("supplier")
-}
-
-model PurchaseOrder {
-  id          BigInt              @id @default(autoincrement())
-  poNo        String              @unique @db.VarChar(50)
-  supplierId  BigInt
   createdById BigInt?
-  orderDate   DateTime            @default(now())
-  status      PurchaseOrderStatus @default(DRAFT)
-  note        String?             @db.Text
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  supplier  Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  createdBy User?     @relation("PurchaseOrders_CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  lines      PurchaseOrderLine[]
-  stockMoves StockMove[] @relation("StockMove_PurchaseOrder")
-
-  @@index([supplierId])
-  @@index([createdById])
-
-  // list/filter theo màn hình
-  @@index([status, orderDate])
-  @@index([supplierId, orderDate])
-
-  @@map("purchase_order")
-}
-
-model PurchaseOrderLine {
-  id              BigInt  @id @default(autoincrement())
-  purchaseOrderId BigInt
-  lineNo          Int
-  itemId          BigInt
-  uom             String  @default("pcs") @db.VarChar(20)
-  qty             Decimal @db.Decimal(18, 3)
-  unitPrice       Decimal @db.Decimal(18, 2)
-  amount          Decimal @db.Decimal(18, 2)
-  receivedQty     Decimal @db.Decimal(18, 3) @default(0)
-
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  item          Item          @relation(fields: [itemId], references: [id], onDelete: Restrict)
-
-  @@unique([purchaseOrderId, lineNo])
-  @@index([itemId])
-  @@index([purchaseOrderId])
-
-  @@map("purchase_order_line")
-}
-
-//
-// ===================== WAREHOUSE / LOCATION =====================
-//
-
-model Warehouse {
-  id        BigInt   @id @default(autoincrement())
-  code      String   @unique @db.VarChar(30)
-  name      String   @db.VarChar(150)
-  note      String?  @db.VarChar(255)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  locations  Location[]
-  stockMoves StockMove[]
-
-  @@map("warehouse")
-}
-
-model Location {
-  id          BigInt   @id @default(autoincrement())
-  warehouseId BigInt
-  code        String   @db.VarChar(50)
-  name        String   @db.VarChar(150)
-  parentId    BigInt?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  parent    Location? @relation("LocationParent", fields: [parentId], references: [id], onDelete: SetNull)
-  children  Location[] @relation("LocationParent")
+  customer  Customer        @relation(fields: [customerId], references: [id])
+  createdBy User?           @relation(fields: [createdById], references: [id])
+  items     QuotationItem[]
 
-  fromLines StockMoveLine[] @relation("FromLocation")
-  toLines   StockMoveLine[] @relation("ToLocation")
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuotationItem {
+  id          BigInt  @id @default(autoincrement())
+  quotationId BigInt
+  productId   BigInt
+  qty         Int
+  unitPrice   Decimal @db.Decimal(18, 2)
+  lineTotal   Decimal @db.Decimal(18, 2)
+
+  quotation Quotation @relation(fields: [quotationId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@index([quotationId])
+  @@index([productId])
+}
+
+// ========================
+// PRODUCTION: Plans / Work Orders / Resources
+// ========================
+model ProductionPlan {
+  id          BigInt    @id @default(autoincrement())
+  code        String    @unique
+  name        String
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String    @default("draft")
+  createdById BigInt?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User?                @relation(fields: [createdById], references: [id])
+  items     ProductionPlanItem[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ProductionPlanItem {
+  id        BigInt @id @default(autoincrement())
+  planId    BigInt
+  productId BigInt
+  qty       Int
+
+  plan    ProductionPlan @relation(fields: [planId], references: [id])
+  product Product        @relation(fields: [productId], references: [id])
+
+  @@index([planId])
+  @@index([productId])
+}
+
+model WorkOrder {
+  id           BigInt    @id @default(autoincrement())
+  code         String    @unique
+  salesOrderId BigInt?
+  productId    BigInt
+  qty          Int
+  plannedStart DateTime?
+  plannedEnd   DateTime?
+  status       String    @default("planned")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  salesOrder SalesOrder?         @relation(fields: [salesOrderId], references: [id])
+  product    Product             @relation(fields: [productId], references: [id])
+  steps      WorkOrderStep[]
+  resources  WorkOrderResource[]
+
+  @@index([salesOrderId])
+  @@index([productId])
+  @@index([status])
+}
+
+model WorkOrderStep {
+  id          BigInt    @id @default(autoincrement())
+  workOrderId BigInt
+  stepNo      Int
+  name        String
+  status      String    @default("todo")
+  startedAt   DateTime?
+  finishedAt  DateTime?
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+
+  @@unique([workOrderId, stepNo])
+  @@index([workOrderId])
+}
+
+model Resource {
+  id       BigInt   @id @default(autoincrement())
+  code     String   @unique
+  name     String
+  type     String
+  capacity Decimal? @db.Decimal(18, 2)
+  status   String   @default("active")
+
+  workOrders WorkOrderResource[]
+}
+
+model WorkOrderResource {
+  id          BigInt   @id @default(autoincrement())
+  workOrderId BigInt
+  resourceId  BigInt
+  assignedQty Decimal? @db.Decimal(18, 2)
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id])
+  resource  Resource  @relation(fields: [resourceId], references: [id])
+
+  @@unique([workOrderId, resourceId])
+  @@index([workOrderId])
+  @@index([resourceId])
+}
+
+// ========================
+// WAREHOUSE: Warehouses / Zones / Inventory / Inbound / Outbound
+// ========================
+model Warehouse {
+  id      BigInt  @id @default(autoincrement())
+  code    String  @unique
+  name    String
+  address String?
+  status  String  @default("active")
+
+  zones     WarehouseZone[]
+  balances  InventoryBalance[]
+  moves     StockMove[]
+  inbounds  InboundOrder[]
+  outbounds OutboundOrder[]
+}
+
+model WarehouseZone {
+  id          BigInt @id @default(autoincrement())
+  warehouseId BigInt
+  code        String
+  name        String
+
+  warehouse Warehouse          @relation(fields: [warehouseId], references: [id])
+  balances  InventoryBalance[]
+  moves     StockMove[]
 
   @@unique([warehouseId, code])
-  @@index([parentId])
-
-  // tree query + list theo kho
-  @@index([warehouseId, parentId])
-
-  @@map("location")
+  @@index([warehouseId])
 }
 
-//
-// ===================== STOCK MOVES (phiếu kho) =====================
-//
+model InventoryBalance {
+  id          BigInt  @id @default(autoincrement())
+  warehouseId BigInt
+  zoneId      BigInt?
+  productId   BigInt
+  onHand      Int     @default(0)
+  reserved    Int     @default(0)
+  available   Int     @default(0)
+
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id])
+  zone      WarehouseZone? @relation(fields: [zoneId], references: [id])
+  product   Product        @relation(fields: [productId], references: [id])
+
+  @@unique([warehouseId, zoneId, productId])
+  @@index([productId])
+}
 
 model StockMove {
-  id              BigInt          @id @default(autoincrement())
-  moveNo          String          @unique @db.VarChar(50)
-  moveType        StockMoveType
-  status          StockMoveStatus @default(DRAFT)
-  warehouseId     BigInt
-  createdById     BigInt?
-  moveDate        DateTime        @default(now())
-  note            String?         @db.Text
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id          BigInt   @id @default(autoincrement())
+  moveType    String
+  refType     String?
+  refId       BigInt?
+  warehouseId BigInt
+  zoneId      BigInt?
+  productId   BigInt
+  qty         Int
+  unitCost    Decimal? @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
 
-  purchaseOrderId   BigInt?
-  productionOrderId BigInt?
-  salesOrderId      BigInt?
-
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  createdBy User?     @relation("StockMoves_CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  purchaseOrder   PurchaseOrder?   @relation("StockMove_PurchaseOrder", fields: [purchaseOrderId], references: [id], onDelete: SetNull)
-  productionOrder ProductionOrder? @relation("StockMove_ProductionOrder", fields: [productionOrderId], references: [id], onDelete: SetNull)
-  salesOrder      SalesOrder?      @relation("StockMove_SalesOrder", fields: [salesOrderId], references: [id], onDelete: SetNull)
-
-  lines StockMoveLine[]
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id])
+  zone      WarehouseZone? @relation(fields: [zoneId], references: [id])
+  product   Product        @relation(fields: [productId], references: [id])
 
   @@index([warehouseId])
-  @@index([createdById])
-  @@index([purchaseOrderId])
-  @@index([productionOrderId])
-  @@index([salesOrderId])
-
-  // list/filter theo màn hình nhập/xuất kho
-  @@index([warehouseId, moveDate])
-  @@index([status, moveDate])
-  @@index([moveType, moveDate])
-
-  @@map("stock_moves")
+  @@index([zoneId])
+  @@index([productId])
+  @@index([refType, refId])
+  @@index([createdAt])
 }
 
-model StockMoveLine {
-  id               BigInt   @id @default(autoincrement())
-  stockMoveId      BigInt
+model InboundOrder {
+  id           BigInt    @id @default(autoincrement())
+  code         String    @unique
+  warehouseId  BigInt
+  supplierName String?
+  status       String    @default("waiting")
+  expectedDate DateTime?
+  createdAt    DateTime  @default(now())
 
-  // XOR: chỉ được set 1 trong 2 (enforce ở service)
-  itemId           BigInt?
-  productVariantId BigInt?
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id])
+  items     InboundItem[]
 
-  uom              String   @default("pcs") @db.VarChar(20)
-  qty              Decimal  @db.Decimal(18, 3)
-  unitCost         Decimal? @db.Decimal(18, 4)
+  @@index([warehouseId])
+  @@index([status])
+  @@index([createdAt])
+}
 
-  fromLocationId   BigInt?
-  toLocationId     BigInt?
+model InboundItem {
+  id        BigInt   @id @default(autoincrement())
+  inboundId BigInt
+  productId BigInt
+  qty       Int
+  unitCost  Decimal? @db.Decimal(18, 2)
 
-  note             String?  @db.Text
+  inbound InboundOrder @relation(fields: [inboundId], references: [id])
+  product Product      @relation(fields: [productId], references: [id])
 
-  stockMove StockMove @relation(fields: [stockMoveId], references: [id], onDelete: Cascade)
+  @@index([inboundId])
+  @@index([productId])
+}
 
-  item           Item?           @relation(fields: [itemId], references: [id], onDelete: Restrict)
-  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+model OutboundOrder {
+  id           BigInt   @id @default(autoincrement())
+  code         String   @unique
+  warehouseId  BigInt
+  salesOrderId BigInt?
+  status       String   @default("waiting")
+  createdAt    DateTime @default(now())
 
-  fromLocation Location? @relation("FromLocation", fields: [fromLocationId], references: [id], onDelete: SetNull)
-  toLocation   Location? @relation("ToLocation", fields: [toLocationId], references: [id], onDelete: SetNull)
+  warehouse  Warehouse      @relation(fields: [warehouseId], references: [id])
+  salesOrder SalesOrder?    @relation(fields: [salesOrderId], references: [id])
+  items      OutboundItem[]
 
-  @@index([stockMoveId])
-  @@index([itemId])
-  @@index([productVariantId])
-  @@index([fromLocationId])
-  @@index([toLocationId])
+  @@index([warehouseId])
+  @@index([salesOrderId])
+  @@index([status])
+  @@index([createdAt])
+}
 
-  // join/filter theo line khi list chứng từ
-  @@index([stockMoveId, itemId])
-  @@index([stockMoveId, productVariantId])
+model OutboundItem {
+  id         BigInt @id @default(autoincrement())
+  outboundId BigInt
+  productId  BigInt
+  qty        Int
 
-  @@map("stock_moves_line")
+  outbound OutboundOrder @relation(fields: [outboundId], references: [id])
+  product  Product       @relation(fields: [productId], references: [id])
+
+  @@index([outboundId])
+  @@index([productId])
+}
+
+// ========================
+// SHIPPING: Partners / Vehicles / Plans / Shipments / Costs
+// ========================
+model ShippingPartner {
+  id     BigInt  @id @default(autoincrement())
+  code   String  @unique
+  name   String
+  phone  String?
+  email  String?
+  status String  @default("active")
+
+  plans     ShippingPlan[]
+  shipments Shipment[]
+}
+
+model Vehicle {
+  id              BigInt    @id @default(autoincrement())
+  plateNo         String    @unique
+  name            String?
+  maxLoadKg       Decimal?  @db.Decimal(18, 2)
+  lastMaintenance DateTime?
+  nextMaintenance DateTime?
+  status          String    @default("active")
+
+  plans     ShippingPlan[]
+  shipments Shipment[]
+}
+
+model ShippingPlan {
+  id        BigInt   @id @default(autoincrement())
+  code      String   @unique
+  planDate  DateTime
+  partnerId BigInt?
+  vehicleId BigInt?
+  routeName String?
+  status    String   @default("draft")
+
+  partner   ShippingPartner? @relation(fields: [partnerId], references: [id])
+  vehicle   Vehicle?         @relation(fields: [vehicleId], references: [id])
+  shipments Shipment[]
+
+  @@index([planDate])
+  @@index([partnerId])
+  @@index([vehicleId])
+  @@index([status])
+}
+
+model Shipment {
+  id           BigInt   @id @default(autoincrement())
+  code         String   @unique
+  salesOrderId BigInt?
+  planId       BigInt?
+  partnerId    BigInt?
+  vehicleId    BigInt?
+  shipFrom     String?
+  shipTo       String?
+  status       String   @default("waiting")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  salesOrder SalesOrder?      @relation(fields: [salesOrderId], references: [id])
+  plan       ShippingPlan?    @relation(fields: [planId], references: [id])
+  partner    ShippingPartner? @relation(fields: [partnerId], references: [id])
+  vehicle    Vehicle?         @relation(fields: [vehicleId], references: [id])
+
+  items ShipmentItem[]
+  costs ShipmentCost[]
+
+  @@index([salesOrderId])
+  @@index([planId])
+  @@index([partnerId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ShipmentItem {
+  id         BigInt @id @default(autoincrement())
+  shipmentId BigInt
+  productId  BigInt
+  qty        Int
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([shipmentId])
+  @@index([productId])
+}
+
+model ShipmentCost {
+  id         BigInt  @id @default(autoincrement())
+  shipmentId BigInt
+  costType   String  @default("book_ship")
+  amount     Decimal @default(0) @db.Decimal(18, 2)
+  note       String?
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+
+  @@index([shipmentId])
+}
+
+// ========================
+// MARKETING
+// ========================
+model MarketingCampaign {
+  id             BigInt    @id @default(autoincrement())
+  code           String    @unique
+  name           String
+  startDate      DateTime?
+  endDate        DateTime?
+  cost           Decimal   @default(0) @db.Decimal(18, 2)
+  revenue        Decimal   @default(0) @db.Decimal(18, 2)
+  conversionRate Decimal?  @db.Decimal(6, 2)
+  status         String    @default("active")
+  createdAt      DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
 }
