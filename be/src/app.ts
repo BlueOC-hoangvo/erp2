@@ -9,11 +9,21 @@ import { errorHandler } from "./middleware/errorHandler";
 
 import { authRoutes } from "./modules/auth/auth.routes";
 import { meRoutes } from "./modules/me/me.route";
-import { customersRoutes } from "./modules/customers/customers.routes";
-import { filesRoutes } from "./modules/files/files.routes";
-import { auditRoutes } from "./modules/audit/audit.routes";
-import { statusRoutes } from "./modules/status/status.routes";
+import customersRoutes from "./modules/customers/customers.routes";
 
+
+
+import { usersRoutes } from "./modules/users/users.routes";
+import { rolesRoutes } from "./modules/roles/roles.routes";
+import { permissionsRoutes } from "./modules/permissions/permissions.routes";
+
+import suppliersRoutes from "./modules/suppliers/suppliers.routes";
+import itemsRoutes from "./modules/items/items.routes";
+
+import productStylesRoutes from "./modules/product-styles/productStyles.routes";
+import sizesRoutes from "./modules/sizes/sizes.routes";
+import colorsRoutes from "./modules/colors/colors.routes";
+import productVariantsRoutes from "./modules/product-variants/productVariants.routes";
 export function buildApp() {
   const app = express();
   app.use(cors({ origin: true, credentials: true }));
@@ -30,10 +40,25 @@ export function buildApp() {
 
   app.use("/auth", authRoutes());
   app.use("/", meRoutes());
-  app.use("/customers", customersRoutes());
-  app.use("/files", filesRoutes());
-  app.use("/audit-logs", auditRoutes());
-  app.use("/status", statusRoutes());
+
+
+
+  
+  app.use("/suppliers", suppliersRoutes);
+  app.use("/items", itemsRoutes);
+  
+
+  app.use("/users", usersRoutes());
+
+  app.use("/roles", rolesRoutes());
+  app.use("/permissions", permissionsRoutes());
+
+  app.use("/customers", customersRoutes);
+
+  app.use("/product-styles", productStylesRoutes);
+app.use("/sizes", sizesRoutes);
+app.use("/colors", colorsRoutes);
+app.use("/product-variants", productVariantsRoutes);
 
   app.use(errorHandler);
   return app;
