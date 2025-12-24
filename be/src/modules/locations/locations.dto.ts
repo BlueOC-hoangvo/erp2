@@ -9,7 +9,7 @@ export const locationCreateDto = z.object({
 });
 
 export const locationQueryDto = z.object({
-  warehouseId: zBigInt,
+  warehouseId: zBigInt.optional(),
   parentId: zBigInt.optional(),
 });
 
