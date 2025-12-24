@@ -1,72 +1,125 @@
-import { Card, Descriptions, Space, Tabs, Typography } from "antd";
+import { Button, Card, Input, List, Space, Typography, message } from "antd";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getCustomerById } from "../api/get-customer-by-id";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import CustomerContactsTab from "../components/CustomerContactsTab";
-import CustomerNotesTab from "../components/CustomerNotesTab";
-import CustomerHandbookTab from "../components/CustomerHandbookTab";
+import { getCustomerById } from "../api/get-customer-by-id";
+import { getCustomerNotes } from "../api/get-customer-notes";
+import { addCustomerNote } from "../api/add-customer-note";
+import { deleteCustomerNote } from "../api/delete-customer-note";
 
 export default function CustomerDetail() {
   const { id } = useParams();
+  const customerId = String(id);
+  const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["customer", id],
-    queryFn: async () => getCustomerById(id!),
-    enabled: !!id,
+  const [content, setContent] = useState("");
+
+  const qCustomer = useQuery({
+    queryKey: ["customer", customerId],
+    queryFn: () => getCustomerById(customerId),
+    enabled: !!customerId,
   });
 
-  const c = data?.data;
-  const customerId = String(id ?? "");
+  const qNotes = useQuery({
+    queryKey: ["customer-notes", customerId],
+    queryFn: () => getCustomerNotes(customerId),
+    enabled: !!customerId,
+  });
+
+  const addNoteMut = useMutation({
+    mutationFn: () => addCustomerNote(customerId, content.trim()),
+    onSuccess: async () => {
+      setContent("");
+      message.success("Đã thêm ghi chú");
+      await qc.invalidateQueries({ queryKey: ["customer-notes", customerId] });
+    },
+    onError: (e: any) => message.error(e?.message || "Thêm ghi chú thất bại"),
+  });
+
+  const delNoteMut = useMutation({
+    mutationFn: (noteId: string) => deleteCustomerNote(customerId, noteId),
+    onSuccess: async () => {
+      message.success("Đã xoá ghi chú");
+      await qc.invalidateQueries({ queryKey: ["customer-notes", customerId] });
+    },
+    onError: (e: any) => message.error(e?.message || "Xoá ghi chú thất bại"),
+  });
+
+  const customer = qCustomer.data;
 
   return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      <Typography.Title level={3} style={{ margin: 0 }}>
-        Chi tiết khách hàng
-      </Typography.Title>
+    <div style={{ padding: 16 }}>
+      <Space direction="vertical" style={{ width: "100%" }} size={12}>
+        <Card loading={qCustomer.isLoading}>
+          <Typography.Title level={3} style={{ marginTop: 0 }}>
+            {customer?.name || "Khách hàng"}
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            {customer?.code ? `Mã: ${customer.code} • ` : ""}
+            {customer?.phone ? `SĐT: ${customer.phone} • ` : ""}
+            {customer?.email ? `Email: ${customer.email}` : ""}
+          </Typography.Text>
 
-      <Card loading={isLoading}>
-        {c ? (
-          <Descriptions bordered column={2}>
-            <Descriptions.Item label="Mã">{c.code}</Descriptions.Item>
-            <Descriptions.Item label="Tên">{c.name}</Descriptions.Item>
-            <Descriptions.Item label="SĐT">{c.phone || "-"}</Descriptions.Item>
-            <Descriptions.Item label="Email">
-              {c.email || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Địa chỉ" span={2}>
-              {c.address || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
-              {c.status || "-"}
-            </Descriptions.Item>
-          </Descriptions>
-        ) : (
-          <div style={{ color: "#6b7280" }}>Không tìm thấy khách hàng.</div>
-        )}
-      </Card>
+          {customer?.address && (
+            <div style={{ marginTop: 8 }}>
+              <b>Địa chỉ:</b> {customer.address}
+            </div>
+          )}
 
-      <Card>
-        <Tabs
-          items={[
-            {
-              key: "contacts",
-              label: "Liên hệ",
-              children: <CustomerContactsTab customerId={customerId} />,
-            },
-            {
-              key: "notes",
-              label: "Ghi chú",
-              children: <CustomerNotesTab customerId={customerId} />,
-            },
-            {
-              key: "handbook",
-              label: "Cẩm nang",
-              children: <CustomerHandbookTab customerId={customerId} />,
-            },
-          ]}
-        />
-      </Card>
-    </Space>
+          {customer?.note && (
+            <div style={{ marginTop: 8 }}>
+              <b>Ghi chú:</b> {customer.note}
+            </div>
+          )}
+        </Card>
+
+        <Card title="Ghi chú" loading={qNotes.isLoading}>
+          <Space style={{ width: "100%" }}>
+            <Input
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Nhập ghi chú..."
+            />
+            <Button
+              type="primary"
+              disabled={!content.trim()}
+              loading={addNoteMut.isPending}
+              onClick={() => addNoteMut.mutate()}
+            >
+              Thêm
+            </Button>
+          </Space>
+
+          <div style={{ marginTop: 12 }}>
+            <List
+              dataSource={qNotes.data || []}
+              locale={{ emptyText: "Chưa có ghi chú" }}
+              renderItem={(n) => (
+                <List.Item
+                  actions={[
+                    <Button
+                      danger
+                      size="small"
+                      key="del"
+                      loading={delNoteMut.isPending}
+                      onClick={() => delNoteMut.mutate(n.id)}
+                    >
+                      Xoá
+                    </Button>,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={n.user?.fullName || n.user?.email || "System"}
+                    description={n.createdAt}
+                  />
+                  <div>{n.content}</div>
+                </List.Item>
+              )}
+            />
+          </div>
+        </Card>
+      </Space>
+    </div>
   );
 }
