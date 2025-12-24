@@ -1,6 +1,6 @@
 import { prisma } from "../../db/prisma";
 import { E } from "../../common/errors";
-import { writeAuditLog } from "../../common/audit";
+
 
 const toBigInt = (v: any) => BigInt(v);
 
@@ -36,13 +36,7 @@ export class RbacService {
       },
     });
 
-    await writeAuditLog({
-      actorUserId,
-      action: "rbac.role.create",
-      entityType: "role",
-      entityId: created.id,
-      after: created,
-    });
+   
 
     return { ...created, id: created.id.toString() };
   }
@@ -66,15 +60,7 @@ export class RbacService {
       },
     });
 
-    await writeAuditLog({
-      actorUserId,
-      action: "rbac.role.update",
-      entityType: "role",
-      entityId: roleId,
-      before,
-      after: updated,
-    });
-
+    
     return { ...updated, id: updated.id.toString() };
   }
 
@@ -87,13 +73,7 @@ export class RbacService {
     await prisma.userRole.deleteMany({ where: { roleId } });
     await prisma.role.delete({ where: { id: roleId } });
 
-    await writeAuditLog({
-      actorUserId,
-      action: "rbac.role.delete",
-      entityType: "role",
-      entityId: roleId,
-      before,
-    });
+    
 
     return { ok: true };
   }
@@ -122,14 +102,7 @@ export class RbacService {
       data: ids.map((pid) => ({ roleId, permissionId: pid })),
     });
 
-    await writeAuditLog({
-      actorUserId,
-      action: "rbac.role.assign_permissions",
-      entityType: "role",
-      entityId: roleId,
-      after: { permissionIds: ids.map(String) },
-    });
-
+   
     return { ok: true };
   }
 
@@ -166,13 +139,7 @@ export class RbacService {
       data: ids.map((rid) => ({ userId, roleId: rid })),
     });
 
-    await writeAuditLog({
-      actorUserId,
-      action: "rbac.user.assign_roles",
-      entityType: "user",
-      entityId: userId,
-      after: { roleIds: ids.map(String) },
-    });
+   
 
     return { ok: true };
   }

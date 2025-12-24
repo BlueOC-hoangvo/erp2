@@ -1,33 +1,89 @@
-import { Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { ok } from "../../common/response";
-import { AuthedRequest } from "../../middleware/auth";
 import { CustomersService } from "./customers.service";
 
-type ReqWithBigIntId = AuthedRequest & { params: { id: bigint } };
+type VReq = Request & { validated?: any; user?: any };
 
 export class CustomersController {
-  static async list(req: AuthedRequest, res: Response) {
-    const q = (req as any).validated?.query ?? req.query;
-    const result = await CustomersService.list(q as any);
-    return ok(res, result.data, result.meta);
+  static async list(req: VReq, res: Response, next: NextFunction) {
+    try {
+      const data = await CustomersService.list(req.validated?.query ?? {
+        page: 1, pageSize: 20, sortBy: "createdAt", sortOrder: "desc",
+      });
+      return ok(res, data);
+    } catch (e) {
+      return next(e);
+    }
   }
 
-  static async create(req: AuthedRequest, res: Response) {
-    return ok(res, await CustomersService.create(req.body, req.user!.id));
+  static async get(req: VReq, res: Response, next: NextFunction) {
+    try {
+      const id: bigint = req.validated.params.id;
+      const data = await CustomersService.get(id);
+      return ok(res, data);
+    } catch (e) {
+      return next(e);
+    }
   }
 
-  static async detail(req: ReqWithBigIntId, res: Response) {
-    return ok(res, await CustomersService.detail(req.params.id));
+  static async create(req: VReq, res: Response, next: NextFunction) {
+    try {
+      const data = await CustomersService.create(req.validated.body);
+      return ok(res, data);
+    } catch (e) {
+      return next(e);
+    }
   }
 
-  static async update(req: ReqWithBigIntId, res: Response) {
-    return ok(
-      res,
-      await CustomersService.update(req.params.id, req.body, req.user!.id)
-    );
+  static async update(req: VReq, res: Response, next: NextFunction) {
+    try {
+      const id: bigint = req.validated.params.id;
+      const data = await CustomersService.update(id, req.validated.body);
+      return ok(res, data);
+    } catch (e) {
+      return next(e);
+    }
   }
 
-  static async remove(req: ReqWithBigIntId, res: Response) {
-    return ok(res, await CustomersService.remove(req.params.id, req.user!.id));
+  static async remove(req: VReq, res: Response, next: NextFunction) {
+    try {
+      const id: bigint = req.validated.params.id;
+      const data = await CustomersService.remove(id);
+      return ok(res, data);
+    } catch (e) {
+      return next(e);
+    }
+  }
+
+  static async listNotes(req: VReq, res: Response, next: NextFunction) {
+    try {
+      const customerId: bigint = req.validated.params.id;
+      const data = await CustomersService.listNotes(customerId);
+      return ok(res, data);
+    } catch (e) {
+      return next(e);
+    }
+  }
+
+  static async createNote(req: VReq, res: Response, next: NextFunction) {
+    try {
+      const customerId: bigint = req.validated.params.id;
+      const userId: bigint | null = req.user?.id ?? null;
+      const data = await CustomersService.createNote(customerId, userId, req.validated.body);
+      return ok(res, data);
+    } catch (e) {
+      return next(e);
+    }
+  }
+
+  static async removeNote(req: VReq, res: Response, next: NextFunction) {
+    try {
+      const customerId: bigint = req.validated.params.id;
+      const noteId: bigint = req.validated.params.noteId;
+      const data = await CustomersService.removeNote(customerId, noteId);
+      return ok(res, data);
+    } catch (e) {
+      return next(e);
+    }
   }
 }
