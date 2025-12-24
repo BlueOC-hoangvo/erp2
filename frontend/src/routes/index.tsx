@@ -47,6 +47,8 @@ import PurchasingDashboard from "@/modules/purchasing/views/PurchasingDashboard"
 // Accounting modules
 import JournalEntriesList from "@/modules/accounting/views/JournalEntriesList";
 import AccountingDashboard from "@/modules/accounting/views/AccountingDashboard";
+import Suppliers from "@/modules/suppliers/views/Suppliers";
+import WarehouseLocation from "@/modules/warehouse-location/views/WarehouseLocation";
 
 export default function AppRoutes() {
   return (
@@ -71,6 +73,9 @@ export default function AppRoutes() {
             element={<ProductionOrdersDetail />}
           />
 
+          {/* Supplier module */}
+          <Route path={URLS.SUPPLIER} element={<Suppliers />}></Route>
+
           {/* Production modules */}
           <Route path={URLS.PRODUCTION_PLANS} element={<ProductionPlansList />} />
           <Route path="/production/plans/:id" element={<ProductionPlansDetail />} />
@@ -81,6 +86,7 @@ export default function AppRoutes() {
           <Route path={URLS.WAREHOUSE_PRODUCTS} element={<WarehouseProductsList />} />
           <Route path={URLS.WAREHOUSE_IN} element={<WarehouseInList />} />
           <Route path={URLS.WAREHOUSE_OUT} element={<WarehouseOutList />} />
+          <Route path={URLS.WAREHOUSE_LOCATION} element={<WarehouseLocation />}/>
 
           {/* Purchasing modules */}
           <Route path="/purchasing/dashboard" element={<PurchasingDashboard />} />
