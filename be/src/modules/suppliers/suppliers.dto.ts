@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { zBigInt } from "../../common/zod";
 
-export const customerCreateDto = z.object({
+export const supplierCreateDto = z.object({
   code: z.string().trim().min(1).max(50).optional(),
   name: z.string().trim().min(1).max(200),
   taxCode: z.string().trim().min(1).max(50).optional(),
@@ -11,12 +11,12 @@ export const customerCreateDto = z.object({
   note: z.string().optional(),
 });
 
-export const customerUpdateDto = customerCreateDto.partial().refine(
+export const supplierUpdateDto = supplierCreateDto.partial().refine(
   (v) => Object.keys(v).length > 0,
   { message: "At least one field is required" }
 );
 
-export const customerQueryDto = z.object({
+export const supplierQueryDto = z.object({
   q: z.string().trim().optional(),
   name: z.string().trim().optional(),
   phone: z.string().trim().optional(),
@@ -30,15 +30,4 @@ export const customerQueryDto = z.object({
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
-export const customerNoteCreateDto = z.object({
-  content: z.string().trim().min(1),
-});
-
-export const zIdParam = z.object({
-  id: zBigInt,
-});
-
-export const zCustomerNoteParam = z.object({
-  id: zBigInt,
-  noteId: zBigInt,
-});
+export const zIdParam = z.object({ id: zBigInt });
