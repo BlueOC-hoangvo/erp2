@@ -24,6 +24,20 @@ import productStylesRoutes from "./modules/product-styles/productStyles.routes";
 import sizesRoutes from "./modules/sizes/sizes.routes";
 import colorsRoutes from "./modules/colors/colors.routes";
 import productVariantsRoutes from "./modules/product-variants/productVariants.routes";
+
+import locationsRoutes from "./modules/locations/locations.routes";
+import stockMovesRoutes from "./modules/stock-moves/stockMoves.routes";
+
+import warehousesRoutes from "./modules/warehouses/warehouses.routes"
+import inventoryRoutes from "./modules/inventory/inventory.routes";
+import salesOrdersRoutes from "./modules/sales-orders/salesOrders.routes";
+import purchaseOrdersRoutes from "./modules/purchase-orders/purchaseOrders.routes";
+import productionOrdersRoutes from "./modules/production-orders/productionOrders.routes";
+
+import bomsRoutes from "./modules/boms/boms.routes";
+
+
+
 export function buildApp() {
   const app = express();
   app.use(cors({ origin: true, credentials: true }));
@@ -59,7 +73,14 @@ export function buildApp() {
 app.use("/sizes", sizesRoutes);
 app.use("/colors", colorsRoutes);
 app.use("/product-variants", productVariantsRoutes);
-
+app.use("/locations", locationsRoutes);
+app.use("/stock-moves", stockMovesRoutes);
+app.use("/warehouses", warehousesRoutes);
+app.use("/inventory", inventoryRoutes);
+app.use("/sales-orders", salesOrdersRoutes);
+app.use("/purchase-orders", purchaseOrdersRoutes);
+app.use("/production-orders", productionOrdersRoutes);
+app.use("/boms", bomsRoutes);
   app.use(errorHandler);
   return app;
 }
