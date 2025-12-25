@@ -101,3 +101,10 @@ export async function confirmSalesOrder(id: string) {
 export async function cancelSalesOrder(id: string) {
   return unwrap<{ ok: boolean }>(api.post(`/sales-orders/${id}/cancel`));
 }
+
+/**
+ * Tạo production order từ sales order
+ */
+export async function createProductionOrderFromSalesOrder(salesOrderId: string) {
+  return unwrap<{ data: { id: string } }>(api.post(`/production-orders/from-sales-order/${salesOrderId}`));
+}

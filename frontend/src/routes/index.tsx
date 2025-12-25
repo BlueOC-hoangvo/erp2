@@ -21,6 +21,7 @@ import CampaignForm from "@/modules/campaigns/views/CampaignForm";
 import CampaignDetail from "@/modules/campaigns/views/CampaignDetail";
 import ProductionOrdersList from "@/modules/production-orders/views/ProductionOrdersList";
 import { ProductionOrdersDetail } from "@/modules/production-orders/views/ProductionOrdersDetail";
+import ProductionOrderForm from "@/modules/production-orders/views/ProductionOrderForm";
 
 // Production modules
 import { ProductionPlansList } from "@/modules/production-plans/views/ProductionPlansList";
@@ -75,6 +76,10 @@ export default function AppRoutes() {
           <Route
             path="/production/orders/:id"
             element={<ProductionOrdersDetail />}
+          />
+          <Route
+            path="/production/orders/create"
+            element={<ProductionOrderForm />}
           />
 
           {/* Production modules */}

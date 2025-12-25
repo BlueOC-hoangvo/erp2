@@ -1,8 +1,9 @@
 import { Router } from "express";
+import { z } from "zod";
 import { auth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
 import { ProductionOrdersController } from "./productionOrders.controller";
-import { moCreateDto, moQueryDto, moUpdateDto, zIdParam } from "./productionOrders.dto";
+import { moCreateDto, moQueryDto, moUpdateDto, zIdParam, zBigInt } from "./productionOrders.dto";
 import { generateMaterialsQueryDto } from "./productionOrders.dto";
 
 const r = Router();
@@ -26,6 +27,6 @@ r.post(
 r.post("/:id/cancel", auth, validate(zIdParam, "params"), ProductionOrdersController.cancel);
 
 // Tạo Production Orders từ Sales Order
-r.post("/from-sales-order/:salesOrderId", auth, validate(zIdParam, "params"), ProductionOrdersController.createFromSalesOrder);
+r.post("/from-sales-order/:salesOrderId", auth, validate(z.object({ salesOrderId: zBigInt }), "params"), ProductionOrdersController.createFromSalesOrder);
   
 export default r;

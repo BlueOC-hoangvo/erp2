@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Card,
   Row,
@@ -29,8 +29,7 @@ import {
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
-import type { ProductionOrderEntity } from '../types';
-import { PRODUCTION_ORDER_STATUSES, PRIORITY_LEVELS } from '../types';
+import { PRODUCTION_ORDER_STATUSES } from '../types';
 import { getProductionOrder } from '../fake/production-orders.store';
 
 const { TabPane } = Tabs;
@@ -75,14 +74,11 @@ export function ProductionOrdersDetail() {
     return statusConfig?.color || 'default';
   };
 
-  const getPriorityColor = (priority: string) => {
-    const priorityConfig = PRIORITY_LEVELS.find(p => p.key === priority);
-    return priorityConfig?.color || 'default';
-  };
+
 
   const getCompletionRate = () => {
-    return order.totalQuantity > 0 
-      ? Math.round((order.completedQuantity / order.totalQuantity) * 100)
+    return order.qtyPlan > 0 
+      ? Math.round((Number(order.qtyCompleted) / Number(order.qtyPlan)) * 100)
       : 0;
   };
 
@@ -273,33 +269,17 @@ export function ProductionOrdersDetail() {
       children: (
         <div>
           <div className="font-medium">Tạo lệnh sản xuất</div>
-          <div className="text-gray-500">{new Date(order.createdAt).toLocaleString('vi-VN')}</div>
+          <div className="text-gray-500">{order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : '-'}</div>
         </div>
       )
     },
-    ...(order.items.map((item) => ({
-      color: item.status === 'COMPLETED' ? 'green' : item.status === 'IN_PROGRESS' ? 'blue' : 'gray',
-      dot: item.status === 'COMPLETED' ? <CheckCircleOutlined /> : <ClockCircleOutlined />,
-      children: (
-        <div>
-          <div className="font-medium">
-            {item.sizeCode}/{item.colorCode} - {item.workCenter}
-          </div>
-          <div className="text-gray-500">
-            {item.assignedWorker && `Phụ trách: ${item.assignedWorker}`}
-            {item.startTime && ` - Bắt đầu: ${new Date(item.startTime).toLocaleString('vi-VN')}`}
-            {item.endTime && ` - Kết thúc: ${new Date(item.endTime).toLocaleString('vi-VN')}`}
-          </div>
-        </div>
-      )
-    }))),
-    ...(order.status === 'COMPLETED' ? [{
+    ...(order.status === 'DONE' ? [{
       color: 'green',
       dot: <TrophyOutlined />,
       children: (
         <div>
           <div className="font-medium">Hoàn thành lệnh sản xuất</div>
-          <div className="text-gray-500">{new Date(order.updatedAt).toLocaleString('vi-VN')}</div>
+          <div className="text-gray-500">{order.updatedAt ? new Date(order.updatedAt).toLocaleString('vi-VN') : '-'}</div>
         </div>
       )
     }] : [])
@@ -318,14 +298,11 @@ export function ProductionOrdersDetail() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-800 mb-1">
-              Lệnh sản xuất: {order.orderNo}
+              Lệnh sản xuất: {order.moNo}
             </h1>
             <div className="flex items-center space-x-2">
               <Tag color={getStatusColor(order.status)}>
                 {PRODUCTION_ORDER_STATUSES.find(s => s.key === order.status)?.label}
-              </Tag>
-              <Tag color={getPriorityColor(order.priority)}>
-                {PRIORITY_LEVELS.find(p => p.key === order.priority)?.label}
               </Tag>
             </div>
           </div>
@@ -340,7 +317,7 @@ export function ProductionOrdersDetail() {
       {/* Progress Alert */}
       <Alert
         message={`Tiến độ hoàn thành: ${getCompletionRate()}%`}
-        description={`Đã hoàn thành ${order.completedQuantity}/${order.totalQuantity} sản phẩm`}
+        description={`Đã hoàn thành ${Number(order.qtyCompleted)}/${Number(order.qtyPlan)} sản phẩm`}
         type={getCompletionRate() === 100 ? 'success' : 'info'}
         showIcon
         className="mb-6"
@@ -354,27 +331,21 @@ export function ProductionOrdersDetail() {
               <Card>
                 <Descriptions title="Thông tin chung" bordered column={2}>
                   <Descriptions.Item label="Mã lệnh" span={1}>
-                    <strong>{order.orderNo}</strong>
+                    <strong>{order.moNo}</strong>
                   </Descriptions.Item>
                   <Descriptions.Item label="Sản phẩm" span={1}>
                     <div>
-                      <div className="font-medium">{order.productName}</div>
-                      <div className="text-gray-500">{order.productStyleCode}</div>
+                      <div className="font-medium">{order.productStyle?.name || '-'}</div>
+                      <div className="text-gray-500">{order.productStyle?.code || '-'}</div>
                     </div>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Khách hàng" span={1}>
-                    {order.customerName || '-'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Đội sản xuất" span={1}>
-                    <Space>
-                      <TeamOutlined />
-                      {order.assignedTeam}
-                    </Space>
+                  <Descriptions.Item label="Sales Order Item ID" span={1}>
+                    {order.salesOrderItemId || '-'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Số lượng" span={1}>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
-                        {order.completedQuantity}/{order.totalQuantity}
+                        {Number(order.qtyCompleted)}/{Number(order.qtyPlan)}
                       </div>
                       <Progress 
                         percent={getCompletionRate()} 
@@ -385,18 +356,12 @@ export function ProductionOrdersDetail() {
                   </Descriptions.Item>
                   <Descriptions.Item label="Thời gian" span={1}>
                     <div>
-                      <div>Bắt đầu: {new Date(order.startDate).toLocaleDateString('vi-VN')}</div>
-                      <div>Dự kiến kết thúc: {new Date(order.endDate).toLocaleDateString('vi-VN')}</div>
+                      <div>Bắt đầu: {order.startDate ? new Date(order.startDate).toLocaleDateString('vi-VN') : '-'}</div>
+                      <div>Dự kiến kết thúc: {order.dueDate ? new Date(order.dueDate).toLocaleDateString('vi-VN') : '-'}</div>
                     </div>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Giờ công" span={1}>
-                    <div>
-                      <div>Dự kiến: {order.estimatedHours}h</div>
-                      <div>Thực tế: {order.actualHours}h</div>
-                    </div>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Ghi chú" span={2}>
-                    {order.notes || '-'}
+                  <Descriptions.Item label="Ghi chú" span={1}>
+                    {order.note || '-'}
                   </Descriptions.Item>
                 </Descriptions>
 
@@ -409,11 +374,27 @@ export function ProductionOrdersDetail() {
               </Card>
             </TabPane>
 
-            <TabPane tab="Sản phẩm" key="items">
+            <TabPane tab="Breakdown" key="items">
               <Card>
                 <Table
-                  columns={itemsColumns}
-                  dataSource={order.items}
+                  columns={[
+                    { title: "Size", dataIndex: "sizeCode", width: 120 },
+                    { title: "Color", dataIndex: "colorCode", width: 160 },
+                    { title: "VariantId", dataIndex: "productVariantId" },
+                    {
+                      title: "Qty plan",
+                      dataIndex: "qtyPlan",
+                      align: "right" as const,
+                      width: 140,
+                    },
+                    {
+                      title: "Qty done",
+                      dataIndex: "qtyCompleted",
+                      align: "right" as const,
+                      width: 140,
+                    },
+                  ]}
+                  dataSource={order.breakdowns || []}
                   rowKey="id"
                   pagination={false}
                   scroll={{ x: 800 }}
@@ -424,8 +405,36 @@ export function ProductionOrdersDetail() {
             <TabPane tab="Vật tư" key="materials">
               <Card>
                 <Table
-                  columns={materialsColumns}
-                  dataSource={order.materials}
+                  columns={[
+                    { title: "SKU", dataIndex: "itemSku", width: 120 },
+                    { title: "Vật tư", dataIndex: "itemName" },
+                    {
+                      title: "Loại",
+                      dataIndex: "itemType",
+                      width: 120,
+                      render: (v: string) => <Tag>{v}</Tag>,
+                    },
+                    { title: "UOM", dataIndex: "uom", width: 90 },
+                    {
+                      title: "Req",
+                      dataIndex: "qtyRequired",
+                      align: "right" as const,
+                      width: 120,
+                    },
+                    {
+                      title: "Issued",
+                      dataIndex: "qtyIssued",
+                      align: "right" as const,
+                      width: 120,
+                    },
+                    {
+                      title: "Wastage %",
+                      dataIndex: "wastagePercent",
+                      align: "right" as const,
+                      width: 120,
+                    },
+                  ]}
+                  dataSource={order.materialRequirements || []}
                   rowKey="id"
                   pagination={false}
                   scroll={{ x: 800 }}
@@ -435,19 +444,9 @@ export function ProductionOrdersDetail() {
 
             <TabPane tab="Kiểm tra chất lượng" key="quality">
               <Card>
-                {order.qualityChecks.length > 0 ? (
-                  <Table
-                    columns={qualityColumns}
-                    dataSource={order.qualityChecks}
-                    rowKey="id"
-                    pagination={false}
-                    scroll={{ x: 800 }}
-                  />
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    Chưa có bản kiểm tra chất lượng nào
-                  </div>
-                )}
+                <div className="text-center py-8 text-gray-500">
+                  Chưa có bản kiểm tra chất lượng nào
+                </div>
               </Card>
             </TabPane>
           </Tabs>
@@ -468,11 +467,9 @@ export function ProductionOrdersDetail() {
               </Col>
               <Col span={12}>
                 <Statistic
-                  title="Hiệu suất"
-                  value={order.actualHours > 0 ? Math.round((order.estimatedHours / order.actualHours) * 100) : 0}
-                  suffix="%"
-                  precision={1}
-                  valueStyle={{ color: '#722ed1' }}
+                  title="Trạng thái"
+                  value={order.status}
+                  valueStyle={{ color: getStatusColor(order.status) }}
                 />
               </Col>
             </Row>
@@ -482,34 +479,24 @@ export function ProductionOrdersDetail() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span>Số lượng hoàn thành:</span>
-                <strong>{order.completedQuantity}/{order.totalQuantity}</strong>
+                <strong>{Number(order.qtyCompleted)}/{Number(order.qtyPlan)}</strong>
               </div>
               <div className="flex justify-between">
-                <span>Giờ công dự kiến:</span>
-                <strong>{order.estimatedHours}h</strong>
+                <span>Product Style ID:</span>
+                <strong>{order.productStyleId}</strong>
               </div>
               <div className="flex justify-between">
-                <span>Giờ công thực tế:</span>
-                <strong>{order.actualHours}h</strong>
+                <span>Breakdown Items:</span>
+                <strong>{order.breakdowns?.length || 0}</strong>
               </div>
               <div className="flex justify-between">
-                <span>Đội sản xuất:</span>
-                <strong>{order.assignedTeam}</strong>
+                <span>Material Requirements:</span>
+                <strong>{order.materialRequirements?.length || 0}</strong>
               </div>
               <div className="flex justify-between">
-                <span>Công đoạn:</span>
-                <strong>{order.workCenters.length}</strong>
+                <span>Created:</span>
+                <strong>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}</strong>
               </div>
-            </div>
-          </Card>
-
-          <Card title="Công đoạn sản xuất">
-            <div className="space-y-2">
-              {order.workCenters.map((center, index) => (
-                <Tag key={index} color="blue" className="mb-2">
-                  {center}
-                </Tag>
-              ))}
             </div>
           </Card>
         </Col>

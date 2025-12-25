@@ -23,8 +23,10 @@ import {
   ShoppingCartOutlined,
   CalendarOutlined,
   UserOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { useSalesOrder, useConfirmSalesOrder, useCancelSalesOrder } from "../api/hooks/useSalesOrders";
+import { useCreateProductionOrderFromSalesOrder } from "../api/hooks/useProductionOrders";
 import { formatCurrency, formatDate, getStatusColor, getStatusLabel, parseDecimal } from "../utils/mappers";
 
 const { Title, Text } = Typography;
@@ -37,6 +39,7 @@ export function SalesOrdersDetail() {
   const { data: salesOrder, isLoading, error, refetch } = useSalesOrder(id || "");
   const confirmMutation = useConfirmSalesOrder();
   const cancelMutation = useCancelSalesOrder();
+  const createProductionOrderMutation = useCreateProductionOrderFromSalesOrder();
 
   const handleConfirm = async () => {
     if (!id) return;
@@ -59,6 +62,17 @@ export function SalesOrdersDetail() {
       refetch();
     } catch (error: any) {
       message.error(error?.message || "Có lỗi xảy ra khi hủy đơn hàng");
+    }
+  };
+
+  const handleCreateProductionOrder = async () => {
+    if (!id) return;
+    
+    try {
+      await createProductionOrderMutation.mutateAsync(id);
+      message.success("Tạo lệnh sản xuất thành công");
+    } catch (error: any) {
+      message.error(error?.message || "Có lỗi xảy ra khi tạo lệnh sản xuất");
     }
   };
 
@@ -233,6 +247,22 @@ export function SalesOrdersDetail() {
               Chỉnh sửa
             </Button>
           )}
+
+          {/* Production Order Button */}
+          <Popconfirm
+            title="Bạn có chắc chắn muốn tạo lệnh sản xuất từ đơn hàng này?"
+            onConfirm={handleCreateProductionOrder}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button 
+              icon={<SettingOutlined />}
+              loading={createProductionOrderMutation.isPending}
+              disabled={isReadOnly}
+            >
+              Tạo lệnh sản xuất
+            </Button>
+          </Popconfirm>
         </Space>
       </div>
 

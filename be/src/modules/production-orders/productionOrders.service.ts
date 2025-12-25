@@ -84,6 +84,11 @@ export class ProductionOrdersService {
 
   static async create(userId: bigint | null, data: any) {
     return prisma.$transaction(async (tx) => {
+      // ✅ Validate timeline: startDate should not be after dueDate
+      if (data.startDate && data.dueDate && data.startDate > data.dueDate) {
+        throw E.badRequest("Start date cannot be after due date");
+      }
+  
       const mo = await tx.productionOrder.create({
         data: {
           moNo: data.moNo,
@@ -323,11 +328,25 @@ export class ProductionOrdersService {
   
   static async start(id: bigint) {
     return prisma.$transaction(async (tx) => {
-      const mo = await tx.productionOrder.findUnique({ where: { id }, select: { status: true } });
+      const mo = await tx.productionOrder.findUnique({ where: { id }, select: { status: true, startDate: true, dueDate: true } });
       if (!mo) throw E.notFound("Production order not found");
       if (mo.status !== "RELEASED") throw E.badRequest("Only RELEASED production order can be started");
   
-      await tx.productionOrder.update({ where: { id }, data: { status: "RUNNING" } });
+      // ✅ Auto-set startDate if not set when starting production
+      const startDate = mo.startDate ?? new Date();
+      
+      // ✅ Validate timeline: startDate should not be after dueDate
+      if (mo.dueDate && startDate > mo.dueDate) {
+        throw E.badRequest("Start date cannot be after due date");
+      }
+  
+      await tx.productionOrder.update({ 
+        where: { id }, 
+        data: { 
+          status: "RUNNING",
+          startDate: startDate
+        } 
+      });
       return { ok: true };
     });
   }
@@ -338,7 +357,14 @@ export class ProductionOrdersService {
       if (!mo) throw E.notFound("Production order not found");
       if (mo.status !== "RUNNING") throw E.badRequest("Only RUNNING production order can be done");
   
-      await tx.productionOrder.update({ where: { id }, data: { status: "DONE" } });
+      // ✅ Auto-set endDate when DONE
+      await tx.productionOrder.update({ 
+        where: { id }, 
+        data: { 
+          status: "DONE",
+          // endDate: new Date() // TODO: Chưa migration database
+        } 
+      });
       return { ok: true };
     });
   }
@@ -358,8 +384,15 @@ export class ProductionOrdersService {
 
   // Tạo Production Orders từ Sales Order
   static async createFromSalesOrder(salesOrderId: bigint, userId: bigint | null) {
+    console.log("=== SERVICE: Starting createFromSalesOrder ===");
+    console.log("Sales Order ID:", salesOrderId.toString());
+    console.log("User ID:", userId?.toString() ?? "null");
+    
     return prisma.$transaction(async (tx) => {
+      console.log("=== SERVICE: Starting transaction ===");
+      
       // 1. Lấy SO với items và breakdowns
+      console.log("=== SERVICE: Fetching sales order ===");
       const so = await tx.salesOrder.findUnique({
         where: { id: salesOrderId },
         include: {
@@ -375,19 +408,61 @@ export class ProductionOrdersService {
           },
         },
       });
+      
+      console.log("=== SERVICE: Sales order found:", !!so);
       if (!so) throw E.notFound("Sales order not found");
+      console.log("SO Items count:", so.items.length);
 
-      // 2. Tạo MO cho từng item có breakdowns
+      // 2. Validate: Kiểm tra breakdowns và thông báo
+      const itemsWithoutBreakdowns = [];
+      const itemsWithBreakdowns = [];
+      
+      for (const soItem of so.items) {
+        console.log(`=== SERVICE: Processing SO Item ${soItem.id} ===`);
+        console.log("SO Item qtyTotal:", soItem.qtyTotal);
+        console.log("SO Item breakdowns count:", soItem.breakdowns.length);
+        
+        if (soItem.breakdowns.length === 0) {
+          itemsWithoutBreakdowns.push({
+            id: soItem.id.toString(),
+            itemName: soItem.itemName,
+            qtyTotal: soItem.qtyTotal.toString(),
+            productStyle: soItem.productStyle.name
+          });
+        } else {
+          itemsWithBreakdowns.push({
+            id: soItem.id.toString(),
+            itemName: soItem.itemName,
+            qtyTotal: soItem.qtyTotal.toString(),
+            breakdowns: soItem.breakdowns.length,
+            productStyle: soItem.productStyle.name
+          });
+        }
+      }
+
+      // 3. Thông báo cho user về breakdown status
+      console.log("=== SERVICE: Items with breakdowns:", itemsWithBreakdowns.length);
+      console.log("=== SERVICE: Items without breakdowns:", itemsWithoutBreakdowns.length);
+
+      // 4. Tạo MO cho từng item
       const createdMos = [];
       for (const soItem of so.items) {
-        if (!soItem.breakdowns.length) continue; // Chỉ tạo MO cho items có breakdown
-
-        // Tính tổng qty từ breakdowns
-        const totalQty = soItem.breakdowns.reduce((sum, bd) => {
-          return sum.add(bd.qty);
-        }, new Prisma.Decimal(0));
+        // Tính total qty: ưu tiên breakdowns, fallback về item.qtyTotal
+        let totalQty;
+        if (soItem.breakdowns.length > 0) {
+          totalQty = soItem.breakdowns.reduce((sum, bd) => {
+            return sum.add(bd.qty);
+          }, new Prisma.Decimal(0));
+          console.log("=== SERVICE: Total qty from breakdowns:", totalQty.toString());
+        } else {
+          totalQty = soItem.qtyTotal; // Sử dụng qtyTotal từ schema
+          console.log("=== SERVICE: Using item qtyTotal (no breakdowns):", totalQty.toString());
+        }
+        
+        console.log("=== SERVICE: Total qty calculated:", totalQty.toString());
 
         // Tạo MO mới
+        console.log("=== SERVICE: Creating production order ===");
         const mo = await tx.productionOrder.create({
           data: {
             moNo: await this.generateMoNo(tx),
@@ -401,9 +476,12 @@ export class ProductionOrdersService {
             note: `Tạo từ SO ${so.orderNo} - ${soItem.itemName}`,
           },
         });
+        
+        console.log("=== SERVICE: Production order created with ID:", mo.id.toString());
 
         // Tạo breakdowns cho MO từ SO breakdowns
         if (soItem.breakdowns.length) {
+          console.log("=== SERVICE: Creating breakdowns ===");
           await tx.productionOrderBreakdown.createMany({
             data: soItem.breakdowns.map((bd) => ({
               productionOrderId: mo.id,
@@ -412,28 +490,44 @@ export class ProductionOrdersService {
               qtyDone: new Prisma.Decimal(0),
             })),
           });
+          console.log("=== SERVICE: Breakdowns created ===");
         }
 
         // Auto-generate material requirements từ BOM nếu có
         try {
+          console.log("=== SERVICE: Generating materials from BOM ===");
           await this.generateMaterialsFromBomInternal(tx, mo.id, "replace");
+          console.log("=== SERVICE: Materials generated successfully ===");
         } catch (error) {
-          // Nếu không có BOM thì bỏ qua
-          console.log(`No BOM found for product style ${soItem.productStyleId}, skipping material requirements`);
+          // Nếu không có BOM thì bỏ qua, không throw error
+          console.log(`=== SERVICE: No BOM found for product style ${soItem.productStyleId}, skipping material requirements ===`);
         }
 
         createdMos.push(mo.id.toString());
+        console.log(`=== SERVICE: Added MO ${mo.id.toString()} to created list ===`);
       }
 
-      // 3. Sync status của SO
-      await this.syncSalesOrderStatus(tx, salesOrderId);
+      console.log("=== SERVICE: Total MOs created:", createdMos.length);
 
-      return {
+      // 3. Sync status của SO (try-catch để không ảnh hưởng đến việc tạo MO)
+      try {
+        console.log("=== SERVICE: Syncing sales order status ===");
+        await this.syncSalesOrderStatus(tx, salesOrderId);
+        console.log("=== SERVICE: Sales order status synced ===");
+      } catch (error) {
+        // Sync status có thể fail nhưng không ảnh hưởng đến MO đã tạo
+        console.log(`=== SERVICE: Failed to sync SO status: ${error instanceof Error ? error.message : String(error)} ===`);
+      }
+
+      const result = {
         ok: true,
         salesOrderId: salesOrderId.toString(),
         createdProductionOrders: createdMos,
         message: `Đã tạo ${createdMos.length} đơn sản xuất từ đơn hàng ${so.orderNo}`,
       };
+      
+      console.log("=== SERVICE: Returning result ===", result);
+      return result;
     });
   }
 

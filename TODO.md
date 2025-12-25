@@ -1,51 +1,98 @@
-# TODO - Frontend Development Theo API Logic
+# TODO: Hoàn thiện Module Sản xuất ERP
 
-## Completed Tasks
-- [x] **Sửa lỗi TypeScript**: SalesOrdersList.tsx, SalesOrdersDetail.tsx, Products.tsx
-- [x] **Backend API Analysis**: Phân tích database schema và backend services
-- [x] **Product-Styles API Integration**: Cập nhật theo backend response thực tế
-- [x] **Tạo Complete Product Management System**
+## 🎯 Mục tiêu
+Tạo hệ thống sản xuất hoàn chỉnh, chuẩn nghiệp vụ ERP với đầy đủ tính năng và logic kinh doanh.
 
-## Frontend Development Theo API Logic
+## 📋 Kế hoạch thực hiện
 
-### 📊 Backend Analysis Completed
-- ✅ **Database Schema**: Phân tích Prisma schema với ProductStyle, Size, Color, ProductVariant, Item
-- ✅ **Backend Services**: ItemsService, ProductStylesService với proper pagination
-- ✅ **API Structure**: Response format `{ data: { items: [], page, pageSize, total }, meta: null }`
+### 1. 🔧 Sửa API tạo MO từ Sales Order
+- [ ] Thêm validation: thông báo khi chưa có breakdowns
+- [ ] Option chọn: tạo MO với qtyTotal hoặc yêu cầu nhập breakdowns
+- [ ] UI feedback cho người dùng
 
-### 🏗️ API Modules Created
-- [x] **product-styles.api.ts**: CRUD operations cho kiểu dáng sản phẩm
-- [x] **sizes.api.ts**: CRUD operations cho kích thước
-- [x] **colors.api.ts**: CRUD operations cho màu sắc  
-- [x] **product-variants.api.ts**: CRUD operations cho biến thể sản phẩm
+### 2. 📅 Quản lý Timeline sản xuất
+- [ ] **Start Date**: Ngày bắt đầu sản xuất
+- [ ] **End Date**: Ngày hoàn thành sản xuất (auto-set khi DONE)
+- [ ] **Due Date**: Ngày hạn chót giao hàng
+- [ ] **Lead Time**: Thời gian sản xuất dự kiến
 
-### 🎨 UI Components Created
-- [x] **ProductStyles.tsx**: Quản lý kiểu dáng với search, filter, pagination
-- [x] **Sizes.tsx**: Quản lý kích thước với đầy đủ CRUD
-- [x] **Colors.tsx**: Quản lý màu sắc với color picker visualization
-- [x] **ProductVariants.tsx**: Quản lý biến thể với relationship management
-- [x] **ProductManagement.tsx**: Trang tổng quan với navigation
+### 3. 📊 Tracking & Monitoring
+- [ ] **Progress Tracking**: Theo dõi tiến độ sản xuất real-time
+- [ ] **WIP (Work In Progress)**: Quản lý sản phẩm đang sản xuất
+- [ ] **Yield/Scrap**: Tỷ lệ thành phẩm và phế phẩm
+- [ ] **Efficiency Metrics**: Chỉ số hiệu suất sản xuất
 
-### 🔧 Technical Implementation
-- ✅ **Type Safety**: All APIs have proper TypeScript types matching backend
-- ✅ **Data Access**: Correct nested data access patterns `(data as any)?.data?.data?.items`
-- ✅ **Error Handling**: Comprehensive error handling với user feedback
-- ✅ **Pagination**: Proper pagination với page, pageSize, total
-- ✅ **Search & Filter**: Real-time search và filter capabilities
-- ✅ **Form Validation**: Comprehensive form validation với Ant Design
+### 4. 🏭 Quản lý Tài nguyên
+- [ ] **Work Centers**: Trung tâm sản xuất/máy móc
+- [ ] **Labor Resources**: Nhân công theo ca/kỹ năng
+- [ ] **Machine Capacity**: Năng suất máy móc
+- [ ] **Resource Scheduling**: Lập lịch tài nguyên
 
-### 🎯 Business Logic Alignment
-- ✅ **Product Hierarchy**: Style → Size → Color → Variant relationship
-- ✅ **Status Management**: Active/inactive status for all entities
-- ✅ **Code/Name Structure**: Proper code và name fields
-- ✅ **Audit Trail**: CreatedAt, UpdatedAt timestamps
-- ✅ **Soft Delete**: Delete operations với proper error handling
+### 5. 📦 Material Management
+- [ ] **MRP (Material Requirements Planning)**: Lập kế hoạch nguyên liệu
+- [ ] **Material Allocation**: Cấp phát nguyên liệu cho MO
+- [ ] **Material Issues**: Xuất kho nguyên liệu
+- [ ] **Material Returns**: Trả nguyên liệu dư
+- [ ] **Substitute Materials**: Nguyên liệu thay thế
 
-## Summary
-- ✅ **Backend Analysis**: Hoàn thành phân tích database và API services
-- ✅ **API Integration**: Tất cả APIs đã được tích hợp đúng cấu trúc backend
-- ✅ **Complete UI System**: 5 modules quản lý sản phẩm hoàn chỉnh
-- ✅ **Type Safety**: TypeScript types đồng bộ với database schema
-- ✅ **Production Ready**: Code sẵn sàng cho production deployment
+### 6. 🔄 Production Workflow
+- [ ] **Routing/Operations**: Quy trình sản xuất từng bước
+- [ ] **Operation Sequences**: Thứ tự thực hiện các công đoạn
+- [ ] **Operation Times**: Thời gian thực hiện từng công đoạn
+- [ ] **Quality Checks**: Kiểm tra chất lượng giữa chừng
 
-**🎉 FRONTEND DEVELOPMENT HOÀN THÀNH THEO API LOGIC**
+### 7. 📋 Production Reports
+- [ ] **Daily Production Report**: Báo cáo sản xuất hàng ngày
+- [ ] **OEE Report**: Overall Equipment Effectiveness
+- [ ] **Cost Analysis**: Phân tích chi phí sản xuất
+- [ ] **Capacity Utilization**: Tỷ lệ sử dụng năng suất
+
+### 8. 🎯 Advanced Features
+- [ ] **Capacity Planning**: Lập kế hoạch năng suất
+- [ ] **Preventive Maintenance**: Bảo trì phòng ngừa
+- [ ] **Quality Management**: Quản lý chất lượng
+- [ ] **Shop Floor Control**: Điều hành sàn nhà máy
+
+### 9. 🔗 Integration
+- [ ] **Sales Order Integration**: Tích hợp đơn hàng bán
+- [ ] **Purchase Order Integration**: Tích hợp đơn mua hàng
+- [ ] **Warehouse Integration**: Tích hợp kho hàng
+- [ ] **Financial Integration**: Tích hợp kế toán
+
+### 10. 📱 UI/UX Improvements
+- [ ] **Production Dashboard**: Bảng điều khiển sản xuất
+- [ ] **Kanban View**: Giao diện Kanban cho MO
+- [ ] **Calendar View**: Lịch sản xuất
+- [ ] **Mobile Support**: Hỗ trợ mobile
+
+## 🚀 Priority Order
+
+### Phase 1: Core Fixes (Tuần này)
+1. ✅ Fix API tạo MO với validation breakdowns
+2. ✅ Thêm End Date khi hoàn thành MO (auto-set ngày DONE)
+3. ✅ Basic timeline management (auto-set startDate, validate timeline logic)
+
+### Phase 2: Production Control (Tuần tới)  
+1. Progress tracking
+2. Material management
+3. Basic reporting
+
+### Phase 3: Advanced Features (Tháng này)
+1. Resource management
+2. Workflow optimization
+3. Integration với modules khác
+
+## 💡 Technical Notes
+- Sử dụng Prisma Decimal cho số lượng
+- Implement audit trail cho tất cả changes
+- Real-time notifications cho critical events
+- Role-based access control cho từng tính năng
+- API versioning cho backward compatibility
+
+## 🎯 Success Criteria
+- ✅ Tạo MO từ SO với proper validation
+- ✅ Tracking đầy đủ lifecycle MO
+- ✅ Material requirements được quản lý chặt chẽ
+- ✅ Reports chính xác và kịp thời
+- ✅ Integration seamless với các modules khác
+- ✅ UI/UX intuitive và efficient

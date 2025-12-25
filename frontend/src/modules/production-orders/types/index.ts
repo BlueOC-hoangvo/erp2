@@ -3,7 +3,7 @@ export interface ProductionOrderBreakdown {
   id: number;
   productVariantId: number;
   qtyPlan: number;
-  qtyDone: number;
+  qtyCompleted: number;
   productVariant?: {
     id: number;
     name: string;
@@ -47,7 +47,7 @@ export interface ProductionOrderEntity {
     code: string;
   };
   qtyPlan: number;
-  qtyDone: number;
+  qtyCompleted: number;
   startDate?: string;
   dueDate?: string;
   status: "DRAFT" | "RELEASED" | "RUNNING" | "DONE" | "CANCELLED";
@@ -70,7 +70,7 @@ export interface ProductionOrderCreate {
   breakdowns?: Array<{
     productVariantId: number;
     qtyPlan: number;
-    qtyDone?: number;
+    qtyCompleted?: number;
   }>;
   materialRequirements?: Array<{
     itemId: number;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   Table, 
@@ -11,21 +11,18 @@ import {
   Progress, 
   Tooltip,
   Select,
-  DatePicker,
   Input,
   message,
 } from 'antd';
 import { 
   PlusOutlined, 
   EyeOutlined, 
-  EditOutlined, 
   DeleteOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   TeamOutlined,
   TrophyOutlined,
   PlayCircleOutlined,
-  PauseCircleOutlined,
   StopOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -44,7 +41,6 @@ import {
 import { PRODUCTION_ORDER_STATUSES } from '../types';
 
 const { Option } = Select;
-const { RangePicker } = DatePicker;
 const { Search } = Input;
 
 const ProductionOrdersList: React.FC = () => {
@@ -60,7 +56,7 @@ const ProductionOrdersList: React.FC = () => {
   });
 
   // Load production orders
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['production-orders', query],
     queryFn: () => getProductionOrders(query),
   });
@@ -159,7 +155,7 @@ const ProductionOrdersList: React.FC = () => {
 
   const getCompletionRate = (order: ProductionOrderEntity) => {
     return order.qtyPlan > 0 
-      ? Math.round((Number(order.qtyDone) / Number(order.qtyPlan)) * 100)
+      ? Math.round((Number(order.qtyCompleted) / Number(order.qtyPlan)) * 100)
       : 0;
   };
 
@@ -216,7 +212,7 @@ const ProductionOrdersList: React.FC = () => {
       width: 140,
       render: (_, record: ProductionOrderEntity) => (
         <div className="text-center">
-          <div className="font-medium">{Number(record.qtyDone)}/{Number(record.qtyPlan)}</div>
+          <div className="font-medium">{Number(record.qtyCompleted)}/{Number(record.qtyPlan)}</div>
           <Progress 
             percent={getCompletionRate(record)} 
             size="small" 
