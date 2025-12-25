@@ -28,7 +28,7 @@ export const URLS = {
   WAREHOUSE_IN: "/warehouse/in",
   WAREHOUSE_OUT: "/warehouse/out",
   WAREHOUSE_TRANSFER: "/warehouse/transfer",
-  WAREHOUSE_LOCATION: "/warehouse/areas",
+  WAREHOUSE_LOCATION: "/warehouse-location",
 
   // Supplier
   SUPPLIER: "/supplier",

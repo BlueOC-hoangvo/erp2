@@ -1,31 +1,31 @@
 export interface Warehouse {
-    id: string;
-    warehouseId: string;
+    id: number;
     code: string;
     name: string;
-    parentId?: string;
+    note?: string;
     createdAt: string;
     updatedAt: string;
 };
 
 export interface Location {
-    id: string;
+    id: number;
+    warehouseId: number;
     code: string;
     name: string;
-    note?: string;
+    parentId?: number | null;
     createdAt: string;
     updatedAt: string;
 }
 
 export interface WarehouseUpsertBody {
-    warehouseId: string;
-    code: string;
-    name: string;
-    parentId?: string;
-};
-
-export interface LocationUpsertBody {
     code: string;
     name: string;
     note?: string;
+};
+
+export interface LocationUpsertBody {
+    warehouseId:  number;
+    code: string;
+    name: string;
+    parentId?: number | null;
 }

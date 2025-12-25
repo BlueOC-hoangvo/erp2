@@ -20,6 +20,12 @@ export class LocationsService {
     return rows.map(map);
   }
 
+  static async get(id: bigint) {
+    const row = await prisma.location.findUnique({ where: { id } });
+    if (!row) throw E.notFound("Location not found");
+    return map(row);
+  }
+
   static async create(data: {
     warehouseId: bigint;
     code: string;
