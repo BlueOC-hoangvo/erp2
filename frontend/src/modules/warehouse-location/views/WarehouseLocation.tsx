@@ -270,7 +270,14 @@ export default function WarehouseLocation() {
                     onView={handleViewWarehouse}
                     onEdit={handleEditWarehouse}
                     onAdd={openAddWarehouse}
-                    />
+                />
+                <div className="flex justify-end items-center space-x-2 text-sm">
+                    <button className="px-2 py-1 text-gray-500 hover:text-black">‹</button>
+                    <button className="px-3 py-1 border rounded text-blue-600 border-blue-600">
+                        1
+                    </button>
+                    <button className="px-2 py-1 text-gray-500 hover:text-black">›</button>
+                </div>
             </div>
 
             <div className="p-6 bg-white rounded-lg shadow-sm flex flex-col gap-y-[1.5rem]">
@@ -282,6 +289,13 @@ export default function WarehouseLocation() {
                     onAdd={openAddLocation}
                     onDelete={handleDeleteLocation}
                 />
+                <div className="flex justify-end items-center space-x-2 text-sm">
+                    <button className="px-2 py-1 text-gray-500 hover:text-black">‹</button>
+                    <button className="px-3 py-1 border rounded text-blue-600 border-blue-600">
+                        1
+                    </button>
+                    <button className="px-2 py-1 text-gray-500 hover:text-black">›</button>
+                </div>
             </div>
 
             <ModalBase
