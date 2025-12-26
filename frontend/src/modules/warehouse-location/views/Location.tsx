@@ -5,15 +5,18 @@ type Props = {
     loading?: boolean;
     onView: (locationId: number) => void;
     onEdit: (location: Location) => void;
+    onAdd?: () => void;
+    onDelete: (location: Location) => void;
 };
 
-export default function Location({ items, loading, onView, onEdit } : Props) {
+export default function Location({ items, loading, onView, onEdit, onAdd, onDelete } : Props) {
     return (
         <>
             <div className="flex flex-row justify-between">
                 <h1 className="text-xl font-semibold">Danh sách địa điểm kho</h1>
                 <button
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    onClick={onAdd}
                 >
                     Thêm địa điểm kho mới
                 </button>
@@ -61,6 +64,9 @@ export default function Location({ items, loading, onView, onEdit } : Props) {
                                             <button className="px-3 py-1 border rounded hover:bg-gray-100"
                                                 onClick={() => onEdit(l)}
                                             >Sửa</button>
+                                            <button className="px-3 py-1 border rounded hover:bg-gray-100"
+                                                onClick={() => onDelete(l)}
+                                            >Xóa</button>
                                         </td>
                                     </tr>
                                 );

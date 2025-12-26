@@ -5,12 +5,12 @@ export const locationCreateDto = z.object({
   warehouseId: zBigInt,
   code: z.string().trim().min(1).max(50),
   name: z.string().trim().min(1).max(150),
-  parentId: zBigInt.optional(),
+  parentId: zBigInt.nullable().optional(),
 });
 
 export const locationQueryDto = z.object({
   warehouseId: zBigInt.optional(),
-  parentId: zBigInt.optional(),
+  parentId: zBigInt.nullable().optional(),
 });
 
 export const zIdParam = z.object({

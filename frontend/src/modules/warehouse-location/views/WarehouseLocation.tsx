@@ -7,17 +7,20 @@ import { getLocations } from "../api/get-location";
 import { getWarehouseById } from "../api/get-warehouse-id";
 import { getLocationById } from "../api/get-location-id";
 import { updateWarehouse } from "../api/update-warehouse";
+import { updateLocation } from "../api/update-location";
 import { addWarehouses } from "../api/add-warehouse";
+import { addLocations } from "../api/add-location";
 import type {
     Warehouse as WarehouseType,
     Location as LocationType,
     WarehouseUpsertBody,
     LocationUpsertBody,
 } from "../types";
-import { updateLocation } from "../api/update-location";
+import { deleteLocation } from "../api/delete-location-id";
 
 type ViewType = null | "warehouse" | "location";
 type EditType = null | "warehouse" | "location";
+type AddType = null | "warehouse" | "location";
 
 export default function WarehouseLocation() {
     const [warehouses, setWarehouses] = useState<WarehouseType[]>([]);
@@ -50,40 +53,21 @@ export default function WarehouseLocation() {
         parentId: null,
     });
 
-    const [createWarehouseOpen, setCreateWarehouseOpen] = useState(false);
-    const [creatingWarehouse, setCreatingWarehouse] = useState(false);
-    const [createWarehouseForm, setCreateWarehouseForm] = useState<WarehouseUpsertBody>({
+    const [addType, setAddType] = useState<AddType>(null);
+    const [creating, setCreating] = useState(false);
+
+    const [addWarehouseForm, setAddWarehouseForm] = useState<WarehouseUpsertBody>({
         code: "",
         name: "",
         note: "",
     });
 
-    const openCreateWarehouse = () => {
-        setCreateWarehouseForm({ code: "", name: "", note: "" });
-        setCreateWarehouseOpen(true);
-    };
-
-    const closeCreateWarehouse = () => {
-        setCreateWarehouseOpen(false);
-        setCreatingWarehouse(false);
-    };
-
-    const submitCreateWarehouse = async () => {
-        if (!createWarehouseForm.code.trim() || !createWarehouseForm.name.trim()) return;
-
-        setCreatingWarehouse(true);
-        try {
-            await addWarehouses({
-                code: createWarehouseForm.code.trim(),
-                name: createWarehouseForm.name.trim(),
-                note: createWarehouseForm.note?.trim() || undefined,
-            });
-            closeCreateWarehouse();
-            await loadData();
-        } finally {
-            setCreatingWarehouse(false);
-        }
-    };
+    const [addLocationForm, setAddLocationForm] = useState<LocationUpsertBody>({
+        warehouseId: 0,
+        code: "",
+        name: "",
+        parentId: null,
+    });
 
     useEffect(() => {
         loadData();
@@ -142,7 +126,7 @@ export default function WarehouseLocation() {
 
     const handleEditWarehouse = (w: WarehouseType) => {
         setEditType("warehouse");
-        setEditingWarehouseId(w.id);
+        setEditingWarehouseId(Number(w.id));
         setEditWarehouseForm({
             code: w.code ?? "",
             name: w.name ?? "",
@@ -152,9 +136,9 @@ export default function WarehouseLocation() {
 
     const handleEditLocation = (l: LocationType) => {
         setEditType("location");
-        setEditingLocationId(l.id);
+        setEditingLocationId(Number(l.id));
         setEditLocationForm({
-            warehouseId: l.warehouseId,
+            warehouseId: Number(l.warehouseId),
             code: l.code ?? "",
             name: l.name ?? "",
             parentId: l.parentId ?? null,
@@ -195,7 +179,7 @@ export default function WarehouseLocation() {
                     code: editLocationForm.code.trim(),
                     name: editLocationForm.name.trim(),
                     parentId: editLocationForm.parentId ?? null,
-                })
+                });
 
                 closeEdit();
                 await loadData();
@@ -203,6 +187,77 @@ export default function WarehouseLocation() {
             }
         } finally {
             setSaving(false);
+        }
+    };
+
+    const openAddWarehouse = () => {
+        setAddWarehouseForm({ code: "", name: "", note: "" });
+        setAddType("warehouse");
+    };
+
+    const openAddLocation = () => {
+        const firstWarehouseId = warehouses[0]?.id ? Number(warehouses[0].id) : 0;
+        setAddLocationForm({
+            warehouseId: firstWarehouseId,
+            code: "",
+            name: "",
+            parentId: null,
+        });
+        setAddType("location");
+    };
+
+    const closeAdd = () => {
+        setAddType(null);
+        setCreating(false);
+    };
+
+    const submitAdd = async () => {
+        setCreating(true);
+        try {
+            if (addType === "warehouse") {
+                if (!addWarehouseForm.code.trim() || !addWarehouseForm.name.trim()) return;
+
+                await addWarehouses({
+                    code: addWarehouseForm.code.trim(),
+                    name: addWarehouseForm.name.trim(),
+                    note: addWarehouseForm.note?.trim() || undefined,
+                });
+
+                closeAdd();
+                await loadData();
+                return;
+            }
+
+            if (addType === "location") {
+                if (!addLocationForm.code.trim() || !addLocationForm.name.trim()) return;
+
+                await addLocations({
+                    warehouseId: addLocationForm.warehouseId,
+                    code: addLocationForm.code.trim(),
+                    name: addLocationForm.name.trim(),
+                    parentId: addLocationForm.parentId ?? null,
+                });
+
+                closeAdd();
+                await loadData();
+                return;
+            }
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleDeleteLocation = async (l: LocationType) => {
+        const ok = window.confirm(
+            `Bạn có chắc muốn xóa location "${l.name}"?`
+        );
+        if (!ok) return;
+
+        try {
+            await deleteLocation(l.id);
+            await loadData();
+        } catch (e: any) {
+            alert(e?.message ?? "Không thể xóa location");
         }
     };
 
@@ -214,9 +269,8 @@ export default function WarehouseLocation() {
                     loading={loadingWarehouses}
                     onView={handleViewWarehouse}
                     onEdit={handleEditWarehouse}
-                    onAdd={openCreateWarehouse}
-                />
-
+                    onAdd={openAddWarehouse}
+                    />
             </div>
 
             <div className="p-6 bg-white rounded-lg shadow-sm flex flex-col gap-y-[1.5rem]">
@@ -225,57 +279,117 @@ export default function WarehouseLocation() {
                     loading={loadingLocations}
                     onView={handleViewLocation}
                     onEdit={handleEditLocation}
+                    onAdd={openAddLocation}
+                    onDelete={handleDeleteLocation}
                 />
             </div>
 
             <ModalBase
-                open={createWarehouseOpen}
-                title="Thêm kho mới"
-                onClose={closeCreateWarehouse}
+                open={addType !== null}
+                title={addType === "warehouse" ? "Thêm kho mới" : "Thêm địa điểm kho"}
+                onClose={closeAdd}
                 footer={
                     <div className="flex gap-2">
-                        <button onClick={closeCreateWarehouse} className="rounded border px-4 py-2 hover:bg-gray-50">
+                        <button onClick={closeAdd} className="rounded border px-4 py-2 hover:bg-gray-50">
                             Hủy
                         </button>
                         <button
-                            onClick={submitCreateWarehouse}
-                            disabled={creatingWarehouse}
+                            onClick={submitAdd}
+                            disabled={creating}
                             className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
                         >
-                            {creatingWarehouse ? "Đang tạo..." : "Tạo"}
+                            {creating ? "Đang tạo..." : "Tạo"}
                         </button>
                     </div>
                 }
             >
-                <div className="space-y-4">
-                    <div>
-                        <label className="mb-1 block text-sm text-gray-600">Mã kho</label>
-                        <input
-                            className="w-full rounded border px-3 py-2"
-                            value={createWarehouseForm.code}
-                            onChange={(e) => setCreateWarehouseForm((p) => ({ ...p, code: e.target.value }))}
-                        />
-                    </div>
+                {addType === "warehouse" && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="mb-1 block text-sm text-gray-600">Mã kho</label>
+                            <input
+                                className="w-full rounded border px-3 py-2"
+                                value={addWarehouseForm.code}
+                                onChange={(e) => setAddWarehouseForm((p) => ({ ...p, code: e.target.value }))}
+                            />
+                        </div>
 
-                    <div>
-                        <label className="mb-1 block text-sm text-gray-600">Tên kho</label>
-                        <input
-                            className="w-full rounded border px-3 py-2"
-                            value={createWarehouseForm.name}
-                            onChange={(e) => setCreateWarehouseForm((p) => ({ ...p, name: e.target.value }))}
-                        />
-                    </div>
+                        <div>
+                            <label className="mb-1 block text-sm text-gray-600">Tên kho</label>
+                            <input
+                                className="w-full rounded border px-3 py-2"
+                                value={addWarehouseForm.name}
+                                onChange={(e) => setAddWarehouseForm((p) => ({ ...p, name: e.target.value }))}
+                            />
+                        </div>
 
-                    <div>
-                        <label className="mb-1 block text-sm text-gray-600">Nhãn</label>
-                        <textarea
-                            className="w-full rounded border px-3 py-2"
-                            rows={3}
-                            value={createWarehouseForm.note ?? ""}
-                            onChange={(e) => setCreateWarehouseForm((p) => ({ ...p, note: e.target.value }))}
-                        />
+                        <div>
+                            <label className="mb-1 block text-sm text-gray-600">Ghi chú</label>
+                            <textarea
+                                className="w-full rounded border px-3 py-2"
+                                rows={3}
+                                value={addWarehouseForm.note ?? ""}
+                                onChange={(e) => setAddWarehouseForm((p) => ({ ...p, note: e.target.value }))}
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {addType === "location" && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="mb-1 block text-sm text-gray-600">Kho</label>
+                            <select
+                                className="w-full rounded border px-3 py-2"
+                                value={addLocationForm.warehouseId}
+                                onChange={(e) =>
+                                    setAddLocationForm((p) => ({ ...p, warehouseId: Number(e.target.value) }))
+                                }
+                            >
+                                <option value={0}>-- Chọn kho --</option>
+                                {warehouses.map((w) => (
+                                    <option key={w.id} value={Number(w.id)}>
+                                        {w.code} - {w.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm text-gray-600">Mã địa điểm kho</label>
+                            <input
+                                className="w-full rounded border px-3 py-2"
+                                value={addLocationForm.code}
+                                onChange={(e) => setAddLocationForm((p) => ({ ...p, code: e.target.value }))}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm text-gray-600">Tên địa điểm</label>
+                            <input
+                                className="w-full rounded border px-3 py-2"
+                                value={addLocationForm.name}
+                                onChange={(e) => setAddLocationForm((p) => ({ ...p, name: e.target.value }))}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-sm text-gray-600">Mã khu vực (nếu có)</label>
+                            <input
+                                className="w-full rounded border px-3 py-2"
+                                type="number"
+                                value={addLocationForm.parentId ?? ""}
+                                onChange={(e) =>
+                                    setAddLocationForm((p) => ({
+                                        ...p,
+                                        parentId: e.target.value === "" ? null : Number(e.target.value),
+                                    }))
+                                }
+                                placeholder="để trống nếu root"
+                            />
+                        </div>
+                    </div>
+                )}
             </ModalBase>
 
             <ModalBase
@@ -283,8 +397,8 @@ export default function WarehouseLocation() {
                 title={viewType === "warehouse" ? "Chi tiết kho" : "Chi tiết địa điểm kho"}
                 onClose={closeView}
             >
-                {viewType === "warehouse" && (
-                    loadingViewWarehouse ? (
+                {viewType === "warehouse" &&
+                    (loadingViewWarehouse ? (
                         <div className="text-gray-500">Đang tải...</div>
                     ) : !selectedWarehouse ? (
                         <div className="text-gray-500">Không có dữ liệu</div>
@@ -303,11 +417,10 @@ export default function WarehouseLocation() {
                                 <div className="font-medium">{selectedWarehouse.note ?? "---"}</div>
                             </div>
                         </div>
-                    )
-                )}
+                    ))}
 
-                {viewType === "location" && (
-                    loadingViewLocation ? (
+                {viewType === "location" &&
+                    (loadingViewLocation ? (
                         <div className="text-gray-500">Đang tải...</div>
                     ) : !selectedLocation ? (
                         <div className="text-gray-500">Không có dữ liệu</div>
@@ -330,8 +443,7 @@ export default function WarehouseLocation() {
                                 <div className="font-medium">{selectedLocation.parentId ?? "---"}</div>
                             </div>
                         </div>
-                    )
-                )}
+                    ))}
             </ModalBase>
 
             <ModalBase
@@ -360,9 +472,7 @@ export default function WarehouseLocation() {
                             <input
                                 className="w-full rounded border px-3 py-2"
                                 value={editWarehouseForm.code}
-                                onChange={(e) =>
-                                    setEditWarehouseForm((p) => ({ ...p, code: e.target.value }))
-                                }
+                                onChange={(e) => setEditWarehouseForm((p) => ({ ...p, code: e.target.value }))}
                             />
                         </div>
 
@@ -371,9 +481,7 @@ export default function WarehouseLocation() {
                             <input
                                 className="w-full rounded border px-3 py-2"
                                 value={editWarehouseForm.name}
-                                onChange={(e) =>
-                                    setEditWarehouseForm((p) => ({ ...p, name: e.target.value }))
-                                }
+                                onChange={(e) => setEditWarehouseForm((p) => ({ ...p, name: e.target.value }))}
                             />
                         </div>
 
@@ -383,9 +491,7 @@ export default function WarehouseLocation() {
                                 className="w-full rounded border px-3 py-2"
                                 rows={3}
                                 value={editWarehouseForm.note ?? ""}
-                                onChange={(e) =>
-                                    setEditWarehouseForm((p) => ({ ...p, note: e.target.value }))
-                                }
+                                onChange={(e) => setEditWarehouseForm((p) => ({ ...p, note: e.target.value }))}
                             />
                         </div>
                     </div>
@@ -410,9 +516,7 @@ export default function WarehouseLocation() {
                             <input
                                 className="w-full rounded border px-3 py-2"
                                 value={editLocationForm.code}
-                                onChange={(e) =>
-                                    setEditLocationForm((p) => ({ ...p, code: e.target.value }))
-                                }
+                                onChange={(e) => setEditLocationForm((p) => ({ ...p, code: e.target.value }))}
                             />
                         </div>
 
@@ -421,9 +525,7 @@ export default function WarehouseLocation() {
                             <input
                                 className="w-full rounded border px-3 py-2"
                                 value={editLocationForm.name}
-                                onChange={(e) =>
-                                    setEditLocationForm((p) => ({ ...p, name: e.target.value }))
-                                }
+                                onChange={(e) => setEditLocationForm((p) => ({ ...p, name: e.target.value }))}
                             />
                         </div>
 
