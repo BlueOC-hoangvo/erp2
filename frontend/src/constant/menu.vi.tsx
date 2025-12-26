@@ -130,7 +130,7 @@ export const MENU_VI: AppMenuItem[] = [
       {
         key: "warehouse-products",
         label: "Quản lý sản phẩm/NVL",
-        path: "/warehouse/products",
+        path: "/warehouse-items",
       },
       {
         key: "warehouse-in",

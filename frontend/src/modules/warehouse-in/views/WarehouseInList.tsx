@@ -1,160 +1,93 @@
-import { Button, Card, Space, Table, Tag, Typography, Row, Col, Statistic } from "antd";
-import { useNavigate } from "react-router-dom";
-import { listWarehouseInRecords } from "../fake/warehouse-in.store";
-import { WAREHOUSE_IN_TYPES, WAREHOUSE_IN_STATUS } from "../types";
-import type { WarehouseInEntity } from "../types";
+import { useState, useEffect } from "react";
+import type { WarehouseIn } from "../types";
+import WarehouseInModal from "./WarehouseInModal";
+import WarehouseInAddModal from "./WarehouseInAdd";
+import { getWarehouseIns } from "../api/get-purchase-in";
+import { getSuppliers } from "../api/get-suppliers";
+import { getItems } from "../api/get-items";
+import { createPurchaseOrder } from "../api/add-purchase-order";
 
-export function WarehouseInList() {
-  const navigate = useNavigate();
-  const records = listWarehouseInRecords();
+export default function WarehouseIns() {
+  const [items, setItems] = useState<WarehouseIn[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN");
+  const [openAdd, setOpenAdd] = useState(false);
+
+  const [supplierOptions, setSupplierOptions] = useState<any[]>([]);
+  const [itemOptions, setItemOptions] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [poRes, supRes, itemRes] = await Promise.all([
+        getWarehouseIns({ page: 1, limit: 20 }),
+        getSuppliers({ page: 1, limit: 20 }),
+        getItems({ page: 1, limit: 20 }),
+      ]);
+
+      setItems(poRes.data.items);
+
+      setSupplierOptions(
+        (supRes.data.items ?? []).map((s: any) => ({
+          id: String(s.id),
+          code: s.code,
+          name: s.name,
+        }))
+      );
+
+      setItemOptions(
+        (itemRes.data.items ?? []).map((it: any) => ({
+          id: String(it.id),
+          sku: it.sku,
+          name: it.name,
+          baseUom: it.baseUom,
+        }))
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const columns = [
-    {
-      title: "Số phiếu nhập",
-      dataIndex: "inNo",
-      width: 140,
-      render: (v: string, r: WarehouseInEntity) => (
-        <Button type="link" onClick={() => navigate(`/warehouse/in/${r.id}`)}>
-          {v}
-        </Button>
-      ),
-    },
-    {
-      title: "Loại nhập",
-      dataIndex: "inType",
-      width: 120,
-      render: (v: string) => {
-        const type = WAREHOUSE_IN_TYPES[v as keyof typeof WAREHOUSE_IN_TYPES];
-        return <Tag color={type.color}>{type.label}</Tag>;
-      },
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      width: 120,
-      render: (v: string) => {
-        const status = WAREHOUSE_IN_STATUS[v as keyof typeof WAREHOUSE_IN_STATUS];
-        return <Tag color={status.color}>{status.label}</Tag>;
-      },
-    },
-    {
-      title: "Nhà cung cấp",
-      dataIndex: "supplierName",
-      width: 150,
-      render: (v: string) => v || "-",
-    },
-    {
-      title: "Ngày nhập",
-      dataIndex: "inDate",
-      width: 100,
-      render: (v: string) => formatDate(v),
-    },
-    {
-      title: "Kho nhập",
-      dataIndex: "warehouse",
-      width: 100,
-    },
-    {
-      title: "Khu vực",
-      dataIndex: "area",
-      width: 100,
-    },
-    {
-      title: "Tổng tiền",
-      dataIndex: "totalAmount",
-      width: 120,
-      align: "right" as const,
-      render: (v: number) => `${v.toLocaleString("vi-VN")} VND`,
-    },
-    {
-      title: "Người tạo",
-      dataIndex: "createdBy",
-      width: 120,
-    },
-    {
-      title: "Thao tác",
-      width: 160,
-      render: (_: any, r: WarehouseInEntity) => (
-        <Space>
-          <Button 
-            size="small"
-            onClick={() => navigate(`/warehouse/in/${r.id}`)}
-          >
-            Xem
-          </Button>
-          <Button 
-            size="small"
-            onClick={() => navigate(`/warehouse/in/${r.id}/edit`)}
-          >
-            Sửa
-          </Button>
-        </Space>
-      ),
-    },
-  ];
-
-  const stats = {
-    total: records.length,
-    received: records.filter((r: any) => r.status === 'RECEIVED').length,
-    pending: records.filter((r: any) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length,
-    totalAmount: records.reduce((sum: number, r: any) => sum + r.totalAmount, 0)
+  const fetchPOs = async () => {
+    setLoading(true);
+    try {
+      const res = await getWarehouseIns({ page: 1, limit: 20 });
+      setItems(res.data.items);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      <Typography.Title level={3} style={{ margin: 0 }}>
-        Quản lý nhập kho
-      </Typography.Title>
-
-      {/* Statistics */}
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Tổng phiếu nhập" value={stats.total} valueStyle={{ color: '#1890ff' }} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Đã nhận" value={stats.received} valueStyle={{ color: '#52c41a' }} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Chờ xử lý" value={stats.pending} valueStyle={{ color: '#faad14' }} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="Tổng giá trị" value={stats.totalAmount} suffix="VND" precision={0} valueStyle={{ color: '#722ed1' }} />
-          </Card>
-        </Col>
-      </Row>
-
-      <Card>
-        <div className="flex justify-between items-center mb-4">
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Danh sách phiếu nhập
-          </Typography.Title>
-          <Button 
-            type="primary" 
-            onClick={() => navigate('/warehouse/in/create')}
-          >
-            Tạo phiếu nhập mới
-          </Button>
-        </div>
-
-        <Table<WarehouseInEntity>
-          rowKey="id"
-          dataSource={records}
-          columns={columns}
-          pagination={{ pageSize: 10 }}
+    <div className="flex flex-col gap-y-[1.5rem]">
+      <div className="p-6 bg-white rounded-lg shadow-sm flex flex-col gap-y-[1.5rem]">
+        <WarehouseInModal
+          items={items}
+          loading={loading}
+          onAdd={() => setOpenAdd(true)}
         />
-      </Card>
-    </Space>
+
+        <div className="flex justify-end items-center space-x-2 text-sm">
+          <button className="px-2 py-1 text-gray-500 hover:text-black">‹</button>
+          <button className="px-3 py-1 border rounded text-blue-600 border-blue-600">
+            1
+          </button>
+          <button className="px-2 py-1 text-gray-500 hover:text-black">›</button>
+        </div>
+      </div>
+
+      <WarehouseInAddModal
+        open={openAdd}
+        onClose={() => setOpenAdd(false)}
+        onCreated={fetchPOs}
+        suppliers={supplierOptions}
+        items={itemOptions}
+        createFn={createPurchaseOrder}
+      />
+    </div>
   );
 }
-

@@ -29,9 +29,9 @@ import { ProductionParamsList } from "@/modules/production-params/views/Producti
 import { ProductionResourcesList } from "@/modules/production-resources/views/ProductionResourcesList";
 
 // Warehouse modules
-import { WarehouseProductsList } from "@/modules/warehouse-products/views/WarehouseProductsList";
-import { WarehouseInList } from "@/modules/warehouse-in/views/WarehouseInList";
+import WarehouseItems from "@/modules/warehouse-products/views/WarehouseProductsList";
 import WarehouseOutList from "@/modules/warehouse-out/views/WarehouseOutList";
+import WarehouseInList from "@/modules/warehouse-in/views/WarehouseInList";
 
 // Sales Orders
 import { SalesOrdersDashboard } from "@/modules/sales-orders/views/SalesOrdersDashboard";
@@ -41,7 +41,6 @@ import { SalesOrdersForm } from "@/modules/sales-orders/views/SalesOrdersForm";
 
 // Purchasing modules
 import SuppliersList from "@/modules/purchasing/views/SuppliersList";
-import PurchaseOrdersList from "@/modules/purchasing/views/PurchaseOrdersList";
 import PurchasingDashboard from "@/modules/purchasing/views/PurchasingDashboard";
 
 // Accounting modules
@@ -49,6 +48,7 @@ import JournalEntriesList from "@/modules/accounting/views/JournalEntriesList";
 import AccountingDashboard from "@/modules/accounting/views/AccountingDashboard";
 import Suppliers from "@/modules/suppliers/views/Suppliers";
 import WarehouseLocation from "@/modules/warehouse-location/views/WarehouseLocation";
+import WarehouseIns from "@/modules/warehouse-products/views/WarehouseProductsList";
 
 export default function AppRoutes() {
   return (
@@ -83,7 +83,7 @@ export default function AppRoutes() {
           <Route path={URLS.PRODUCTION_RESOURCES} element={<ProductionResourcesList />} />
 
           {/* Warehouse modules */}
-          <Route path={URLS.WAREHOUSE_PRODUCTS} element={<WarehouseProductsList />} />
+          <Route path={URLS.WAREHOUSE_PRODUCTS} element={<WarehouseItems />} />
           <Route path={URLS.WAREHOUSE_IN} element={<WarehouseInList />} />
           <Route path={URLS.WAREHOUSE_OUT} element={<WarehouseOutList />} />
           <Route path={URLS.WAREHOUSE_LOCATION} element={<WarehouseLocation />}/>
@@ -91,7 +91,7 @@ export default function AppRoutes() {
           {/* Purchasing modules */}
           <Route path="/purchasing/dashboard" element={<PurchasingDashboard />} />
           <Route path="/purchasing/suppliers" element={<SuppliersList />} />
-          <Route path="/purchasing/orders" element={<PurchaseOrdersList />} />
+          <Route path="/purchase-orders" element={<WarehouseIns />} />
 
           {/* Accounting modules */}
           <Route path="/accounting/dashboard" element={<AccountingDashboard />} />

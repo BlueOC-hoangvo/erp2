@@ -17,7 +17,7 @@ export function ModalBase({ open, title, onClose, children, footer }: ModalBaseP
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-2xl rounded-lg bg-white shadow-lg">
+      <div className="relative w-full max-w-2xl rounded-lg bg-white shadow-lg min-w-[50rem]">
         <div className="flex items-center justify-between border-b px-5 py-4">
           <h3 className="text-lg font-semibold">{title ?? "Modal"}</h3>
           <button
