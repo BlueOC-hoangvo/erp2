@@ -7,6 +7,7 @@ import { getLocations } from "../api/get-location";
 import { getWarehouseById } from "../api/get-warehouse-id";
 import { getLocationById } from "../api/get-location-id";
 import { updateWarehouse } from "../api/update-warehouse";
+import { addWarehouses } from "../api/add-warehouse";
 import type {
     Warehouse as WarehouseType,
     Location as LocationType,
@@ -48,6 +49,41 @@ export default function WarehouseLocation() {
         name: "",
         parentId: null,
     });
+
+    const [createWarehouseOpen, setCreateWarehouseOpen] = useState(false);
+    const [creatingWarehouse, setCreatingWarehouse] = useState(false);
+    const [createWarehouseForm, setCreateWarehouseForm] = useState<WarehouseUpsertBody>({
+        code: "",
+        name: "",
+        note: "",
+    });
+
+    const openCreateWarehouse = () => {
+        setCreateWarehouseForm({ code: "", name: "", note: "" });
+        setCreateWarehouseOpen(true);
+    };
+
+    const closeCreateWarehouse = () => {
+        setCreateWarehouseOpen(false);
+        setCreatingWarehouse(false);
+    };
+
+    const submitCreateWarehouse = async () => {
+        if (!createWarehouseForm.code.trim() || !createWarehouseForm.name.trim()) return;
+
+        setCreatingWarehouse(true);
+        try {
+            await addWarehouses({
+                code: createWarehouseForm.code.trim(),
+                name: createWarehouseForm.name.trim(),
+                note: createWarehouseForm.note?.trim() || undefined,
+            });
+            closeCreateWarehouse();
+            await loadData();
+        } finally {
+            setCreatingWarehouse(false);
+        }
+    };
 
     useEffect(() => {
         loadData();
@@ -128,7 +164,6 @@ export default function WarehouseLocation() {
     const closeEdit = () => {
         setEditType(null);
         setSaving(false);
-
         setEditingWarehouseId(null);
         setEditingLocationId(null);
     };
@@ -179,7 +214,9 @@ export default function WarehouseLocation() {
                     loading={loadingWarehouses}
                     onView={handleViewWarehouse}
                     onEdit={handleEditWarehouse}
+                    onAdd={openCreateWarehouse}
                 />
+
             </div>
 
             <div className="p-6 bg-white rounded-lg shadow-sm flex flex-col gap-y-[1.5rem]">
@@ -190,6 +227,56 @@ export default function WarehouseLocation() {
                     onEdit={handleEditLocation}
                 />
             </div>
+
+            <ModalBase
+                open={createWarehouseOpen}
+                title="Thêm kho mới"
+                onClose={closeCreateWarehouse}
+                footer={
+                    <div className="flex gap-2">
+                        <button onClick={closeCreateWarehouse} className="rounded border px-4 py-2 hover:bg-gray-50">
+                            Hủy
+                        </button>
+                        <button
+                            onClick={submitCreateWarehouse}
+                            disabled={creatingWarehouse}
+                            className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
+                        >
+                            {creatingWarehouse ? "Đang tạo..." : "Tạo"}
+                        </button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="mb-1 block text-sm text-gray-600">Mã kho</label>
+                        <input
+                            className="w-full rounded border px-3 py-2"
+                            value={createWarehouseForm.code}
+                            onChange={(e) => setCreateWarehouseForm((p) => ({ ...p, code: e.target.value }))}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-gray-600">Tên kho</label>
+                        <input
+                            className="w-full rounded border px-3 py-2"
+                            value={createWarehouseForm.name}
+                            onChange={(e) => setCreateWarehouseForm((p) => ({ ...p, name: e.target.value }))}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm text-gray-600">Nhãn</label>
+                        <textarea
+                            className="w-full rounded border px-3 py-2"
+                            rows={3}
+                            value={createWarehouseForm.note ?? ""}
+                            onChange={(e) => setCreateWarehouseForm((p) => ({ ...p, note: e.target.value }))}
+                        />
+                    </div>
+                </div>
+            </ModalBase>
 
             <ModalBase
                 open={viewType !== null}

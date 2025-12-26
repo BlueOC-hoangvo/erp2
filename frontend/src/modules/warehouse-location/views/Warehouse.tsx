@@ -5,9 +5,10 @@ type Props = {
     loading?: boolean;
     onView: (warehouseId: number) => void;
     onEdit: (warehouse: Warehouse) => void;
+    onAdd?: () => void;
 };
 
-export default function Warehouse({ items, loading, onView, onEdit }: Props) {
+export default function Warehouse({ items, loading, onView, onEdit, onAdd }: Props) {
 
     return (
         <>
@@ -15,6 +16,7 @@ export default function Warehouse({ items, loading, onView, onEdit }: Props) {
                 <h1 className="text-xl font-semibold">Danh sách kho</h1>
                 <button
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    onClick={onAdd}
                 >
                     Thêm kho mới
                 </button>
