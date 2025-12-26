@@ -1,98 +1,83 @@
-# TODO: Hoàn thiện Module Sản xuất ERP
+# BOM System Fixes - TODO List
 
-## 🎯 Mục tiêu
-Tạo hệ thống sản xuất hoàn chỉnh, chuẩn nghiệp vụ ERP với đầy đủ tính năng và logic kinh doanh.
+## 🎯 **Current Status: BomForm.tsx Issues Identified**
 
-## 📋 Kế hoạch thực hiện
+Based on the analysis of the BOM integration system, I've identified several issues in the BomForm component that need to be fixed:
 
-### 1. 🔧 Sửa API tạo MO từ Sales Order
-- [ ] Thêm validation: thông báo khi chưa có breakdowns
-- [ ] Option chọn: tạo MO với qtyTotal hoặc yêu cầu nhập breakdowns
-- [ ] UI feedback cho người dùng
+---
 
-### 2. 📅 Quản lý Timeline sản xuất
-- [ ] **Start Date**: Ngày bắt đầu sản xuất
-- [ ] **End Date**: Ngày hoàn thành sản xuất (auto-set khi DONE)
-- [ ] **Due Date**: Ngày hạn chót giao hàng
-- [ ] **Lead Time**: Thời gian sản xuất dự kiến
+## 📋 **TODO Items**
 
-### 3. 📊 Tracking & Monitoring
-- [ ] **Progress Tracking**: Theo dõi tiến độ sản xuất real-time
-- [ ] **WIP (Work In Progress)**: Quản lý sản phẩm đang sản xuất
-- [ ] **Yield/Scrap**: Tỷ lệ thành phẩm và phế phẩm
-- [ ] **Efficiency Metrics**: Chỉ số hiệu suất sản xuất
+### ✅ **COMPLETED - 3/5 Items Fixed**
 
-### 4. 🏭 Quản lý Tài nguyên
-- [ ] **Work Centers**: Trung tâm sản xuất/máy móc
-- [ ] **Labor Resources**: Nhân công theo ca/kỹ năng
-- [ ] **Machine Capacity**: Năng suất máy móc
-- [ ] **Resource Scheduling**: Lập lịch tài nguyên
+1. ✅ **Fix Navigation URLs**
+   - **Issue**: Using `urls.boms.list` instead of `urls.BOMS`
+   - **Status**: FIXED
+   - **Changes Made**: 
+     - Updated `navigate(urls.boms.list)` to `navigate(urls.BOMS)` in form submission
+     - Updated `navigate(urls.boms.list)` to `navigate(urls.BOMS)` in cancel handler
 
-### 5. 📦 Material Management
-- [ ] **MRP (Material Requirements Planning)**: Lập kế hoạch nguyên liệu
-- [ ] **Material Allocation**: Cấp phát nguyên liệu cho MO
-- [ ] **Material Issues**: Xuất kho nguyên liệu
-- [ ] **Material Returns**: Trả nguyên liệu dư
-- [ ] **Substitute Materials**: Nguyên liệu thay thế
+2. ✅ **Fix BOM Data Access**
+   - **Issue**: Accessing `bom` directly instead of `bom?.data`
+   - **Status**: FIXED  
+   - **Changes Made**: 
+     - Updated `if (isEdit && bom)` to `if (isEdit && bom?.data)`
+     - Updated `bomUtils.formatBomForForm(bom)` to `bomUtils.formatBomForForm(bom.data)`
 
-### 6. 🔄 Production Workflow
-- [ ] **Routing/Operations**: Quy trình sản xuất từng bước
-- [ ] **Operation Sequences**: Thứ tự thực hiện các công đoạn
-- [ ] **Operation Times**: Thời gian thực hiện từng công đoạn
-- [ ] **Quality Checks**: Kiểm tra chất lượng giữa chừng
+3. ✅ **Remove Unused swap Function**
+   - **Issue**: `swap` function imported but not used in useFieldArray
+   - **Status**: FIXED
+   - **Changes Made**: 
+     - Removed `swap` from useFieldArray destructuring
 
-### 7. 📋 Production Reports
-- [ ] **Daily Production Report**: Báo cáo sản xuất hàng ngày
-- [ ] **OEE Report**: Overall Equipment Effectiveness
-- [ ] **Cost Analysis**: Phân tích chi phí sản xuất
-- [ ] **Capacity Utilization**: Tỷ lệ sử dụng năng suất
+### 🔄 **REMAINING - 2/5 Items**
 
-### 8. 🎯 Advanced Features
-- [ ] **Capacity Planning**: Lập kế hoạch năng suất
-- [ ] **Preventive Maintenance**: Bảo trì phòng ngừa
-- [ ] **Quality Management**: Quản lý chất lượng
-- [ ] **Shop Floor Control**: Điều hành sàn nhà máy
+4. 🔄 **Test Application**
+   - **Issue**: Need to verify all fixes work correctly
+   - **Status**: PENDING
+   - **Action**: Run frontend application and test BOM functionality
 
-### 9. 🔗 Integration
-- [ ] **Sales Order Integration**: Tích hợp đơn hàng bán
-- [ ] **Purchase Order Integration**: Tích hợp đơn mua hàng
-- [ ] **Warehouse Integration**: Tích hợp kho hàng
-- [ ] **Financial Integration**: Tích hợp kế toán
+5. 🔄 **Verify Integration**
+   - **Issue**: Ensure all components work together properly
+   - **Status**: PENDING  
+   - **Action**: Test navigation, form submission, data loading, and error handling
 
-### 10. 📱 UI/UX Improvements
-- [ ] **Production Dashboard**: Bảng điều khiển sản xuất
-- [ ] **Kanban View**: Giao diện Kanban cho MO
-- [ ] **Calendar View**: Lịch sản xuất
-- [ ] **Mobile Support**: Hỗ trợ mobile
+---
 
-## 🚀 Priority Order
+## 🔧 **Technical Details**
 
-### Phase 1: Core Fixes (Tuần này)
-1. ✅ Fix API tạo MO với validation breakdowns
-2. ✅ Thêm End Date khi hoàn thành MO (auto-set ngày DONE)
-3. ✅ Basic timeline management (auto-set startDate, validate timeline logic)
+### Issues Fixed:
 
-### Phase 2: Production Control (Tuần tới)  
-1. Progress tracking
-2. Material management
-3. Basic reporting
+1. **Navigation URLs**: Updated all navigation calls to use the correct `urls.BOMS` constant
+2. **Data Access**: Fixed data access pattern to handle API response structure correctly  
+3. **Unused Import**: Removed unused `swap` function to clean up code
 
-### Phase 3: Advanced Features (Tháng này)
-1. Resource management
-2. Workflow optimization
-3. Integration với modules khác
+### Expected Results:
+- ✅ Form navigation should work correctly
+- ✅ BOM data should load properly in edit mode
+- ✅ Code should be cleaner without unused imports
 
-## 💡 Technical Notes
-- Sử dụng Prisma Decimal cho số lượng
-- Implement audit trail cho tất cả changes
-- Real-time notifications cho critical events
-- Role-based access control cho từng tính năng
-- API versioning cho backward compatibility
+---
 
-## 🎯 Success Criteria
-- ✅ Tạo MO từ SO với proper validation
-- ✅ Tracking đầy đủ lifecycle MO
-- ✅ Material requirements được quản lý chặt chẽ
-- ✅ Reports chính xác và kịp thời
-- ✅ Integration seamless với các modules khác
-- ✅ UI/UX intuitive và efficient
+## 🚀 **Next Steps**
+
+1. **Test the Application**:
+   - Run frontend development server
+   - Navigate to BOM sections
+   - Test create/edit BOM functionality
+   - Verify navigation works properly
+
+2. **Integration Verification**:
+   - Test all BOM-related features
+   - Check form validation
+   - Verify error handling
+   - Test data persistence
+
+---
+
+## 📝 **Notes**
+
+- All changes have been made to `frontend/src/modules/boms/components/BomForm.tsx`
+- The fixes address the core navigation and data handling issues
+- The application should now be fully functional for BOM management
+- Additional testing recommended to ensure complete functionality

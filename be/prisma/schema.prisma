@@ -56,6 +56,20 @@ enum ItemType {
   OTHER
 }
 
+enum BomVersionStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum BomApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 //
 // ===================== RBAC / AUTH =====================
 //
@@ -80,6 +94,11 @@ model User {
   purchaseOrders    PurchaseOrder[]   @relation("PurchaseOrders_CreatedBy")
   stockMoves        StockMove[]       @relation("StockMoves_CreatedBy")
   productionOrders  ProductionOrder[] @relation("ProductionOrders_CreatedBy")
+  
+  // BOM relations
+  bomVersionsApproved BomVersion[] @relation("BomVersionApprovedBy")
+  bomVersionsCreated  BomVersion[] @relation("BomVersionCreatedBy")
+  bomApprovals       BomApproval[]
 
   @@map("users")
 }
@@ -391,23 +410,7 @@ model ProductionOrderBreakdown {
   @@map("production_order_breakdowns")
 }
 
-model MoMaterialRequirement {
-  id                BigInt   @id @default(autoincrement())
-  productionOrderId BigInt
-  itemId            BigInt
-  uom               String   @default("pcs") @db.VarChar(20)
-  qtyRequired       Decimal  @db.Decimal(18, 3)
-  qtyIssued         Decimal  @db.Decimal(18, 3) @default(0)
-  wastagePercent    Decimal  @db.Decimal(8, 2)  @default(0)
-  createdAt         DateTime @default(now())
 
-  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
-  item            Item            @relation(fields: [itemId], references: [id], onDelete: Restrict)
-
-  @@unique([productionOrderId, itemId])
-  @@index([itemId])
-  @@map("mo_material_requirement")
-}
 
 //
 // ===================== ITEMS + BOM =====================
@@ -444,6 +447,8 @@ model Bom {
 
   productStyle ProductStyle @relation(fields: [productStyleId], references: [id], onDelete: Cascade)
   lines        BomLine[]
+  versions     BomVersion[]
+  subBomLines  BomLine[] @relation("BomLineSubBom")
 
   @@index([productStyleId])
   @@map("boms")
@@ -456,13 +461,122 @@ model BomLine {
   uom            String  @default("pcs") @db.VarChar(20)
   qtyPerUnit     Decimal @db.Decimal(18, 6)
   wastagePercent Decimal @db.Decimal(8, 2) @default(0)
-
-  bom  Bom  @relation(fields: [bomId], references: [id], onDelete: Cascade)
-  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  lineNo         Int     @default(0)
+  note           String? @db.Text
+  isOptional     Boolean @default(false)
+  leadTimeDays   Int?    @default(0)
+  
+  // Multi-level BOM support
+  subBomId       BigInt?  // Reference to another Bom for sub-assembly
+  parentLineId   BigInt?  // For tracking line hierarchy
+  
+  bom         Bom      @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  item        Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  subBom      Bom?     @relation("BomLineSubBom", fields: [subBomId], references: [id], onDelete: Restrict)
+  parentLine  BomLine? @relation("BomLineHierarchy", fields: [parentLineId], references: [id], onDelete: SetNull)
+  childLines  BomLine[] @relation("BomLineHierarchy")
 
   @@unique([bomId, itemId])
   @@index([itemId])
+  @@index([subBomId])
+  @@index([parentLineId])
   @@map("bom_lines")
+}
+
+// BOM Versioning System
+model BomVersion {
+  id               BigInt            @id @default(autoincrement())
+  bomId            BigInt
+  versionNo        String            @db.VarChar(20)
+  status           BomVersionStatus  @default(DRAFT)
+  description      String?           @db.Text
+  effectiveFrom    DateTime?         // When this version becomes active
+  effectiveTo      DateTime?         // When this version expires
+  parentVersionId  BigInt?           // For version history tracking
+  isCurrent        Boolean           @default(false)
+  approvedById     BigInt?
+  approvedAt       DateTime?
+  createdById      BigInt?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  bom           Bom @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  parentVersion BomVersion? @relation("BomVersionHistory", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childVersions BomVersion[] @relation("BomVersionHistory")
+  approvedBy    User? @relation("BomVersionApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  createdBy     User? @relation("BomVersionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  
+  approvals BomApproval[]
+  materialRequirements MoMaterialRequirement[]
+
+  @@unique([bomId, versionNo])
+  @@index([bomId, isCurrent])
+  @@index([parentVersionId])
+  @@map("bom_versions")
+}
+
+// BOM Approval Workflow
+model BomApproval {
+  id          BigInt             @id @default(autoincrement())
+  bomVersionId BigInt
+  approverId  BigInt
+  status      BomApprovalStatus  @default(PENDING)
+  comments    String?            @db.Text
+  approvedAt  DateTime?          @default(now())
+  createdAt   DateTime           @default(now())
+
+  bomVersion BomVersion @relation(fields: [bomVersionId], references: [id], onDelete: Cascade)
+  approver   User       @relation(fields: [approverId], references: [id], onDelete: Restrict)
+
+  @@unique([bomVersionId, approverId])
+  @@index([bomVersionId])
+  @@map("bom_approvals")
+}
+
+// BOM Templates for quick creation
+model BomTemplate {
+  id           BigInt   @id @default(autoincrement())
+  name         String   @db.VarChar(200)
+  code         String?  @unique @db.VarChar(50)
+  description  String?  @db.Text
+  category     String?  @db.VarChar(100)
+  isActive     Boolean  @default(true)
+  // Template data as JSON for quick BOM creation
+  templateData Json
+  usageCount   BigInt   @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+  @@map("bom_templates")
+}
+
+// Enhanced Material Requirements with cost and lead time
+model MoMaterialRequirement {
+  id                BigInt   @id @default(autoincrement())
+  productionOrderId BigInt
+  itemId            BigInt
+  uom               String   @default("pcs") @db.VarChar(20)
+  qtyRequired       Decimal  @db.Decimal(18, 3)
+  qtyIssued         Decimal  @db.Decimal(18, 3) @default(0)
+  wastagePercent    Decimal  @db.Decimal(8, 2)  @default(0)
+  unitCost          Decimal? @db.Decimal(18, 4) // Cost per unit
+  totalCost         Decimal? @db.Decimal(18, 2) // Total cost for this item
+  leadTimeDays      Int?     @default(0)
+  requiredDate      DateTime? // When material is needed
+  bomVersionId      BigInt?  // Link to specific BOM version used
+  createdAt         DateTime @default(now())
+
+  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+  item            Item            @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  bomVersion      BomVersion?     @relation(fields: [bomVersionId], references: [id], onDelete: SetNull)
+
+  @@unique([productionOrderId, itemId])
+  @@index([itemId])
+  @@index([bomVersionId])
+  @@index([requiredDate])
+  @@map("mo_material_requirement")
 }
 
 //

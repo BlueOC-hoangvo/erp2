@@ -14,6 +14,7 @@ import {
   ClusterOutlined,
   FormatPainterOutlined,
   BorderOutlined,
+  BranchesOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { URLS } from "@/routes/urls";
@@ -84,6 +85,28 @@ export const MENU_VI: AppMenuItem[] = [
         key: "product-variants",
         label: "Biến thể sản phẩm",
         path: URLS.PRODUCT_VARIANTS,
+      },
+    ],
+  },
+  {
+    key: "boms",
+    icon: <BranchesOutlined />,
+    label: "Quản lý BOM",
+    children: [
+      {
+        key: "bom-list",
+        label: "Danh sách BOM",
+        path: URLS.BOMS,
+      },
+      {
+        key: "bom-templates",
+        label: "Templates BOM",
+        path: URLS.BOMS_TEMPLATES,
+      },
+      {
+        key: "bom-comparison",
+        label: "So sánh phiên bản",
+        path: URLS.BOMS_COMPARISON,
       },
     ],
   },

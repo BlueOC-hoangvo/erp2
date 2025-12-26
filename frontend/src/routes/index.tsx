@@ -57,6 +57,16 @@ import Colors from "@/modules/product-styles/views/Colors";
 import Sizes from "@/modules/product-styles/views/Sizes";
 import ProductVariants from "@/modules/product-styles/views/ProductVariants";
 
+// BOM modules
+import { BomList } from "@/modules/boms/components/BomList";
+import { BomForm } from "@/modules/boms/components/BomForm";
+import { BomDetail } from "@/modules/boms/components/BomDetail";
+import { BomExplosion } from "@/modules/boms/components/BomExplosion";
+import { BomCostAnalysis } from "@/modules/boms/components/BomCostAnalysis";
+import { BomVersion } from "@/modules/boms/components/BomVersion";
+import { BomTemplates } from "@/modules/boms/components/BomTemplates";
+import { BomComparison } from "@/modules/boms/components/BomComparison";
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -140,6 +150,17 @@ export default function AppRoutes() {
           <Route path={URLS.COLORS} element={<Colors />} />
           <Route path={URLS.SIZES} element={<Sizes />} />
           <Route path={URLS.PRODUCT_VARIANTS} element={<ProductVariants />} />
+
+          {/* BOM routes */}
+          <Route path={URLS.BOMS} element={<BomList />} />
+          <Route path={URLS.BOMS_CREATE} element={<BomForm />} />
+          <Route path={URLS.BOMS_EDIT(":id")} element={<BomForm />} />
+          <Route path={URLS.BOMS_DETAIL(":id")} element={<BomDetail />} />
+          <Route path={URLS.BOMS_EXPLOSION(":id")} element={<BomExplosion />} />
+          <Route path={URLS.BOMS_COST(":id")} element={<BomCostAnalysis />} />
+          <Route path={URLS.BOMS_VERSIONS(":id")} element={<BomVersion />} />
+          <Route path={URLS.BOMS_COMPARISON} element={<BomComparison />} />
+          <Route path={URLS.BOMS_TEMPLATES} element={<BomTemplates />} />
 
           <Route path={URLS.FILES} element={<Files />} />
           <Route path={URLS.AUDIT_LOGS} element={<AuditLogs />} />

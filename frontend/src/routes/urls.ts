@@ -4,6 +4,17 @@ export const URLS = {
   LOGIN: "/login",
   DASHBOARD: "/",
 
+  // BOM Management
+  BOMS: "/boms",
+  BOMS_CREATE: "/boms/create",
+  BOMS_EDIT: (id: string | number) => `/boms/${id}/edit`,
+  BOMS_DETAIL: (id: string | number) => `/boms/${id}`,
+  BOMS_EXPLOSION: (id: string | number) => `/boms/${id}/explosion`,
+  BOMS_COST: (id: string | number) => `/boms/${id}/cost`,
+  BOMS_VERSIONS: (id: string | number) => `/boms/${id}/versions`,
+  BOMS_COMPARISON: "/boms/compare",
+  BOMS_TEMPLATES: "/boms/templates",
+
   // Sales
   SALES_CUSTOMERS: "/sales/customers",
   SALES_CUSTOMER_DETAIL: (id: string | number) => `/sales/customers/${id}`,
@@ -57,3 +68,6 @@ export const URLS = {
   FORBIDDEN: "/403",
   NOT_FOUND: "/404",
 } as const;
+
+// Export for backward compatibility
+export const urls = URLS;
