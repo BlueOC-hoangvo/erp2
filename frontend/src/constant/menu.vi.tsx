@@ -174,9 +174,9 @@ export const MENU_VI: AppMenuItem[] = [
         path: "/warehouse/out",
       },
       {
-        key: "warehouse-areas",
+        key: "warehouse-location",
         label: "Quản lý khu vực kho",
-        path: "/warehouse/areas",
+        path: "/warehouse-location",
       },
       {
         key: "warehouse-params",

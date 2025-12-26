@@ -7,6 +7,7 @@ import { locationCreateDto, locationQueryDto, zIdParam } from "./locations.dto";
 const r = Router();
 
 r.get("/", validate(locationQueryDto, "query"), LocationsController.list);
+r.get("/:id", validate(zIdParam, "params"), LocationsController.get);
 r.post("/", auth, validate(locationCreateDto, "body"), LocationsController.create);
 r.delete("/:id", auth, validate(zIdParam, "params"), LocationsController.remove);
 

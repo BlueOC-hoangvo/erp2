@@ -1,3 +1,5 @@
+import { WAREHOUSE_IN_STATUS } from "@/modules/warehouse-in/types";
+
 export const URLS = {
   LOGIN: "/login",
   DASHBOARD: "/",
@@ -32,6 +34,10 @@ export const URLS = {
   WAREHOUSE_IN: "/warehouse/in",
   WAREHOUSE_OUT: "/warehouse/out",
   WAREHOUSE_TRANSFER: "/warehouse/transfer",
+  WAREHOUSE_LOCATION: "/warehouse-location",
+
+  // Supplier
+  SUPPLIER: "/supplier",
 
   // Shipping
   SHIPPING_PARTNERS: "/shipping/partners",
