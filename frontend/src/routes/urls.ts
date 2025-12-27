@@ -12,6 +12,8 @@ export const URLS = {
   BOMS_VERSIONS: (id: string | number) => `/boms/${id}/versions`,
   BOMS_COMPARISON: "/boms/compare",
   BOMS_TEMPLATES: "/boms/templates",
+  BOMS_PRODUCTION_INTEGRATION: (id: string | number) => `/boms/${id}/production`,
+  PRODUCTION_ORDER_FROM_BOM: "/production/orders/create-from-bom",
 
   // Sales
   SALES_CUSTOMERS: "/sales/customers",

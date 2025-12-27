@@ -24,7 +24,6 @@ import { toast } from 'react-hot-toast';
 import { 
   useBomDetail, 
   useDeleteBom,
-  useBomExplosion,
   useBomCost,
   useBomLeadTime
 } from '../hooks/useBoms';
@@ -183,6 +182,14 @@ export const BomDetail: React.FC<BomDetailProps> = ({ bomId: propBomId }) => {
               <ClockIcon className="w-4 h-4 mr-2" />
               Quản lý phiên bản
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate(urls.BOMS_PRODUCTION_INTEGRATION(bomId))}>
+              <CogIcon className="w-4 h-4 mr-2" />
+              Tích hợp Production
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate(urls.PRODUCTION_ORDER_FROM_BOM + `?bomId=${bomId}&quantity=1`)}>
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Tạo Production Order
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleExport}>
               <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
               Xuất file
@@ -318,7 +325,7 @@ export const BomDetail: React.FC<BomDetailProps> = ({ bomId: propBomId }) => {
                     <span className="font-medium">
                       {costData ? 
                         new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
-                          .format(costData.data?.totalMaterialCost || 0) : 
+                          .format(costData.totalMaterialCost || 0) : 
                         'Chưa tính'
                       }
                     </span>
@@ -327,7 +334,7 @@ export const BomDetail: React.FC<BomDetailProps> = ({ bomId: propBomId }) => {
                     <span className="text-sm text-gray-600">Lead time:</span>
                     <span className="font-medium">
                       {leadTimeData ? 
-                        `${leadTimeData.data?.maxLeadTime || 0} ngày` : 
+                        `${leadTimeData.maxLeadTime || 0} ngày` : 
                         'Chưa tính'
                       }
                     </span>
@@ -379,7 +386,9 @@ export const BomDetail: React.FC<BomDetailProps> = ({ bomId: propBomId }) => {
                   </TableHeader>
                   <TableBody>
                     {bomData.lines.map((line, index) => {
-                      const effectiveQty = line.qtyPerUnit * (1 + (line.wastagePercent || 0) / 100);
+                      const qtyPerUnit = Number(line.qtyPerUnit) || 0;
+                      const wastagePercent = Number(line.wastagePercent) || 0;
+                      const effectiveQty = qtyPerUnit * (1 + (wastagePercent / 100));
                       const requiredQty = effectiveQty * selectedQuantity;
                       
                       return (
@@ -474,7 +483,7 @@ export const BomDetail: React.FC<BomDetailProps> = ({ bomId: propBomId }) => {
                     <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="text-3xl font-bold text-blue-600">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
-                          .format(costData.data?.totalMaterialCost || 0)}
+                          .format(costData.totalMaterialCost || 0)}
                       </div>
                       <div className="text-sm text-blue-600">Tổng chi phí vật liệu</div>
                       <div className="text-xs text-blue-500 mt-1">
@@ -487,13 +496,13 @@ export const BomDetail: React.FC<BomDetailProps> = ({ bomId: propBomId }) => {
                         <span className="text-sm text-gray-600">Chi phí/đơn vị:</span>
                         <span className="font-medium">
                           {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
-                            .format((costData.data?.totalMaterialCost || 0) / selectedQuantity)}
+                            .format((costData.totalMaterialCost || 0) / selectedQuantity)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Số nguyên liệu:</span>
                         <span className="font-medium">
-                          {costData.data?.materialCosts?.length || 0} loại
+                          {costData.materialCosts?.length || 0} loại
                         </span>
                       </div>
                     </div>
@@ -515,7 +524,7 @@ export const BomDetail: React.FC<BomDetailProps> = ({ bomId: propBomId }) => {
                   <div className="space-y-4">
                     <div className="text-center p-4 bg-orange-50 border border-orange-200 rounded-lg">
                       <div className="text-3xl font-bold text-orange-600">
-                        {leadTimeData.data?.maxLeadTime || 0}
+                        {leadTimeData.maxLeadTime || 0}
                       </div>
                       <div className="text-sm text-orange-600">Ngày tối đa</div>
                     </div>
@@ -524,13 +533,13 @@ export const BomDetail: React.FC<BomDetailProps> = ({ bomId: propBomId }) => {
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Lead time tổng:</span>
                         <span className="font-medium">
-                          {leadTimeData.data?.totalLeadTime || 0} ngày
+                          {leadTimeData.totalLeadTime || 0} ngày
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Ước tính:</span>
                         <span className="font-medium">
-                          {leadTimeData.data?.estimatedDays || 0} ngày
+                          {leadTimeData.estimatedDays || 0} ngày
                         </span>
                       </div>
                     </div>
