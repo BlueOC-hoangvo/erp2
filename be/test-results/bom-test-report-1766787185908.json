@@ -1,0 +1,439 @@
+{
+  "startTime": "2025-12-26T22:13:04.699Z",
+  "phases": {
+    "Phase 1: Basic CRUD Operations": {
+      "startTime": "2025-12-26T22:13:05.715Z",
+      "tests": [
+        {
+          "name": "GET /boms - List all BOMs",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": {
+              "page": 1,
+              "pageSize": 10,
+              "total": 4,
+              "items": [
+                {
+                  "id": "36",
+                  "code": "BOM-2",
+                  "productStyleId": "1",
+                  "name": "Bomtest",
+                  "isActive": true,
+                  "createdAt": "2025-12-26T20:07:00.124Z",
+                  "updatedAt": "2025-12-26T20:07:00.124Z",
+                  "productStyle": {
+                    "id": "1",
+                    "code": "TS-002",
+                    "name": "Áo thun basic",
+                    "note": null,
+                    "isActive": true,
+                    "createdAt": "2025-12-24T17:31:04.880Z",
+                    "updatedAt": "2025-12-24T17:31:04.880Z"
+                  }
+                },
+                {
+                  "id": "35",
+                  "code": "BOM-1",
+                  "productStyleId": "1",
+                  "name": "Bomtest",
+                  "isActive": true,
+                  "createdAt": "2025-12-26T20:06:28.109Z",
+                  "updatedAt": "2025-12-26T20:06:28.109Z",
+                  "productStyle": {
+                    "id": "1",
+                    "code": "TS-002",
+                    "name": "Áo thun basic",
+                    "note": null,
+                    "isActive": true,
+                    "createdAt": "2025-12-24T17:31:04.880Z",
+                    "updatedAt": "2025-12-24T17:31:04.880Z"
+                  }
+                },
+                {
+                  "id": "3",
+                  "code": "BOM-SH001-001",
+                  "productStyleId": "3",
+                  "name": "Basic Shirt BOM v1.0",
+                  "isActive": true,
+                  "createdAt": "2025-12-26T18:27:24.522Z",
+                  "updatedAt": "2025-12-26T18:27:24.522Z",
+                  "productStyle": {
+                    "id": "3",
+                    "code": "SH001",
+                    "name": "Basic Cotton Shirt",
+                    "note": "Standard cotton shirt for men",
+                    "isActive": true,
+                    "createdAt": "2025-12-26T18:27:24.515Z",
+                    "updatedAt": "2025-12-26T18:27:24.515Z"
+                  }
+                },
+                {
+                  "id": "1",
+                  "code": "BOM-TS-001",
+                  "productStyleId": "2",
+                  "name": null,
+                  "isActive": true,
+                  "createdAt": "2025-12-24T17:33:08.387Z",
+                  "updatedAt": "2025-12-24T17:33:08.387Z",
+                  "productStyle": {
+                    "id": "2",
+                    "code": null,
+                    "name": "Áo thun basic",
+                    "note": null,
+                    "isActive": true,
+                    "createdAt": "2025-12-24T17:31:27.835Z",
+                    "updatedAt": "2025-12-24T17:31:27.835Z"
+                  }
+                }
+              ]
+            },
+            "meta": null,
+            "error": null
+          }
+        },
+        {
+          "name": "GET /boms - List BOMs with search",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": {
+              "page": 1,
+              "pageSize": 10,
+              "total": 0,
+              "items": []
+            },
+            "meta": null,
+            "error": null
+          }
+        },
+        {
+          "name": "GET /boms/1 - Get specific BOM",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": {
+              "id": "1",
+              "code": "BOM-TS-001",
+              "productStyleId": "2",
+              "name": null,
+              "isActive": true,
+              "createdAt": "2025-12-24T17:33:08.387Z",
+              "updatedAt": "2025-12-24T17:33:08.387Z",
+              "productStyle": {
+                "id": "2",
+                "code": null,
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:27.835Z",
+                "updatedAt": "2025-12-24T17:31:27.835Z"
+              },
+              "lines": [
+                {
+                  "id": "1",
+                  "bomId": "1",
+                  "itemId": "2",
+                  "uom": "m",
+                  "qtyPerUnit": "1.2",
+                  "wastagePercent": "3",
+                  "lineNo": 0,
+                  "note": null,
+                  "isOptional": false,
+                  "leadTimeDays": 0,
+                  "subBomId": null,
+                  "parentLineId": null,
+                  "item": {
+                    "id": "2",
+                    "sku": null,
+                    "name": "Vải cotton",
+                    "itemType": "FABRIC",
+                    "baseUom": "m",
+                    "isActive": true,
+                    "note": null,
+                    "createdAt": "2025-12-24T17:32:07.252Z",
+                    "updatedAt": "2025-12-24T17:32:07.252Z"
+                  }
+                }
+              ]
+            },
+            "meta": null,
+            "error": null
+          }
+        }
+      ],
+      "passed": 3,
+      "failed": 0,
+      "endTime": "2025-12-26T22:13:05.788Z"
+    },
+    "Phase 2: Enhanced BOM Features": {
+      "startTime": "2025-12-26T22:13:05.788Z",
+      "tests": [
+        {
+          "name": "GET /boms/1/explode - BOM Explosion (100 units)",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": {
+              "items": [
+                {
+                  "itemId": "2",
+                  "itemName": "Vải cotton",
+                  "sku": null,
+                  "uom": "m",
+                  "qtyRequired": 123.60000000000001,
+                  "itemType": "FABRIC"
+                }
+              ],
+              "totalItems": 1,
+              "quantity": 100
+            },
+            "meta": null,
+            "error": null
+          }
+        },
+        {
+          "name": "GET /boms/1/explode - BOM Explosion (1 unit)",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": {
+              "items": [
+                {
+                  "itemId": "2",
+                  "itemName": "Vải cotton",
+                  "sku": null,
+                  "uom": "m",
+                  "qtyRequired": 1.236,
+                  "itemType": "FABRIC"
+                }
+              ],
+              "totalItems": 1,
+              "quantity": 1
+            },
+            "meta": null,
+            "error": null
+          }
+        },
+        {
+          "name": "GET /boms/1/cost - BOM Cost Calculation",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": {
+              "totalMaterialCost": 0,
+              "materialCosts": [
+                {
+                  "itemId": "2",
+                  "itemName": "Vải cotton",
+                  "sku": null,
+                  "uom": "m",
+                  "qtyRequired": 123.60000000000001,
+                  "itemType": "FABRIC",
+                  "unitCost": 0,
+                  "totalCost": 0
+                }
+              ],
+              "quantity": 100
+            },
+            "meta": null,
+            "error": null
+          }
+        },
+        {
+          "name": "GET /boms/1/lead-time - BOM Lead Time",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": {
+              "maxLeadTime": 1,
+              "totalLeadTime": 1,
+              "estimatedDays": 1
+            },
+            "meta": null,
+            "error": null
+          }
+        }
+      ],
+      "passed": 4,
+      "failed": 0,
+      "endTime": "2025-12-26T22:13:05.831Z"
+    },
+    "Phase 3: BOM Versioning System": {
+      "startTime": "2025-12-26T22:13:05.832Z",
+      "tests": [
+        {
+          "name": "GET /boms/1/current-version - Get Current Version",
+          "status": "FAILED",
+          "error": "Expected status 200, got 500",
+          "response": null
+        },
+        {
+          "name": "POST /boms/1/versions - Create New Version",
+          "status": "FAILED",
+          "error": "Expected status 200, got 401",
+          "response": null
+        },
+        {
+          "name": "POST /versions/1/submit-approval - Submit for Approval",
+          "status": "FAILED",
+          "error": "Expected status 200, got 404",
+          "response": null
+        },
+        {
+          "name": "POST /versions/1/approve - Approve Version",
+          "status": "FAILED",
+          "error": "Expected status 200, got 404",
+          "response": null
+        }
+      ],
+      "passed": 0,
+      "failed": 4,
+      "endTime": "2025-12-26T22:13:05.874Z"
+    },
+    "Phase 4: BOM Templates": {
+      "startTime": "2025-12-26T22:13:05.875Z",
+      "tests": [
+        {
+          "name": "GET /boms/templates - List Templates",
+          "status": "FAILED",
+          "error": "Expected status 200, got 400",
+          "response": null
+        },
+        {
+          "name": "POST /boms/templates - Create Template",
+          "status": "FAILED",
+          "error": "Expected status 200, got 401",
+          "response": null
+        },
+        {
+          "name": "GET /boms/templates/1 - Get Template",
+          "status": "FAILED",
+          "error": "Expected status 200, got 400",
+          "response": null
+        },
+        {
+          "name": "POST /templates/1/create-bom - Create BOM from Template",
+          "status": "FAILED",
+          "error": "Expected status 200, got 404",
+          "response": null
+        }
+      ],
+      "passed": 0,
+      "failed": 4,
+      "endTime": "2025-12-26T22:13:05.889Z"
+    },
+    "Phase 5: Error Handling & Edge Cases": {
+      "startTime": "2025-12-26T22:13:05.890Z",
+      "tests": [
+        {
+          "name": "GET /boms/99999 - Invalid BOM ID",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": null,
+            "meta": null,
+            "error": {
+              "message": "BOM not found",
+              "details": null
+            }
+          }
+        },
+        {
+          "name": "GET /boms - Invalid page size",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": null,
+            "meta": null,
+            "error": {
+              "message": "Validation error",
+              "details": {
+                "formErrors": [],
+                "fieldErrors": {
+                  "page": [
+                    "Too small: expected number to be >=1"
+                  ],
+                  "pageSize": [
+                    "Too big: expected number to be <=200"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /boms/1/explode - Invalid quantity",
+          "status": "PASSED",
+          "responseTime": "N/A",
+          "data": {
+            "data": null,
+            "meta": null,
+            "error": {
+              "message": "Validation error",
+              "details": {
+                "formErrors": [],
+                "fieldErrors": {
+                  "quantity": [
+                    "Too small: expected number to be >0"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "passed": 3,
+      "failed": 0,
+      "endTime": "2025-12-26T22:13:05.907Z"
+    }
+  },
+  "summary": {
+    "total": 18,
+    "passed": 10,
+    "failed": 8,
+    "errors": [
+      {
+        "phase": "Phase 3: BOM Versioning System",
+        "test": "GET /boms/1/current-version - Get Current Version",
+        "error": "Expected status 200, got 500"
+      },
+      {
+        "phase": "Phase 3: BOM Versioning System",
+        "test": "POST /boms/1/versions - Create New Version",
+        "error": "Expected status 200, got 401"
+      },
+      {
+        "phase": "Phase 3: BOM Versioning System",
+        "test": "POST /versions/1/submit-approval - Submit for Approval",
+        "error": "Expected status 200, got 404"
+      },
+      {
+        "phase": "Phase 3: BOM Versioning System",
+        "test": "POST /versions/1/approve - Approve Version",
+        "error": "Expected status 200, got 404"
+      },
+      {
+        "phase": "Phase 4: BOM Templates",
+        "test": "GET /boms/templates - List Templates",
+        "error": "Expected status 200, got 400"
+      },
+      {
+        "phase": "Phase 4: BOM Templates",
+        "test": "POST /boms/templates - Create Template",
+        "error": "Expected status 200, got 401"
+      },
+      {
+        "phase": "Phase 4: BOM Templates",
+        "test": "GET /boms/templates/1 - Get Template",
+        "error": "Expected status 200, got 400"
+      },
+      {
+        "phase": "Phase 4: BOM Templates",
+        "test": "POST /templates/1/create-bom - Create BOM from Template",
+        "error": "Expected status 200, got 404"
+      }
+    ]
+  },
+  "endTime": "2025-12-26T22:13:05.907Z"
+}

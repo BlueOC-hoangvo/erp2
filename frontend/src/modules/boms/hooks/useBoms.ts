@@ -1,9 +1,8 @@
-// BOM React Hooks
+// BOM React Hooks - Updated for API documentation compatibility
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { bomApi, bomUtils } from '../api/bom.api';
 import type {
-  Bom,
   BomListParams,
   CreateBomRequest,
   UpdateBomRequest,
@@ -13,6 +12,15 @@ import type {
   CreateBomTemplateRequest,
   CreateBomFromTemplateRequest
 } from '../types/bom.types';
+
+// Error handler for API responses
+const handleApiError = (error: any) => {
+  if (error.response?.data?.error) {
+    const apiError = error.response.data.error;
+    throw new Error(apiError.message || 'API request failed');
+  }
+  throw error;
+};
 
 // Query Keys
 export const bomKeys = {
@@ -38,10 +46,16 @@ export const bomKeys = {
 
 // Basic BOM hooks
 export const useBoms = (params: BomListParams = {}) => {
-  return useQuery({
+  console.log('🔥 HOOK - useBoms called with params:', params);
+  
+  const query = useQuery({
     queryKey: bomKeys.list(params),
     queryFn: () => bomApi.list(params),
   });
+  
+  console.log('🔥 HOOK - useBoms query result:', query);
+  
+  return query;
 };
 
 export const useBom = (id: string) => {
@@ -293,10 +307,10 @@ export const useBomDetail = (bomId: string) => {
   const leadTimeQuery = useBomLeadTime(bomId);
 
   return {
-    bom: bomQuery.data?.data,
-    currentVersion: currentVersionQuery.data?.data,
-    costAnalysis: costQuery.data?.data,
-    leadTime: leadTimeQuery.data?.data,
+    bom: bomQuery.data,
+    currentVersion: currentVersionQuery.data,
+    costAnalysis: costQuery.data,
+    leadTime: leadTimeQuery.data,
     isLoading: bomQuery.isLoading || currentVersionQuery.isLoading,
     error: bomQuery.error || currentVersionQuery.error || costQuery.error || leadTimeQuery.error,
     refetch: () => {

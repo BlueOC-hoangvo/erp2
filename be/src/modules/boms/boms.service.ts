@@ -243,9 +243,9 @@ export class BomsService {
           versionNo: versionData.versionNo,
           description: versionData.description,
           effectiveFrom: versionData.effectiveFrom ? new Date(versionData.effectiveFrom) : null,
-          parentVersionId: versionData.parentVersionId,
+          parentVersionId: versionData.parentVersionId ? BigInt(versionData.parentVersionId) : null,
           status: 'DRAFT',
-          createdById: versionData.createdById
+          createdById: BigInt(versionData.createdById)
         }
       });
 
@@ -256,7 +256,7 @@ export class BomsService {
   /**
    * Submit BOM version để approve
    */
-  static async submitForApproval(versionId: bigint, approvers: bigint[]) {
+  static async submitForApproval(versionId: bigint, approvers: any[]) {
     return prisma.$transaction(async (tx) => {
       // Cập nhật version status
       await (tx as any).bomVersion.update({
@@ -268,7 +268,7 @@ export class BomsService {
       await (tx as any).bomApproval.createMany({
         data: approvers.map(approverId => ({
           bomVersionId: versionId,
-          approverId,
+          approverId: BigInt(approverId),
           status: 'PENDING'
         }))
       });
@@ -280,14 +280,14 @@ export class BomsService {
   /**
    * Approve BOM version
    */
-  static async approveVersion(versionId: bigint, approverId: bigint, comments?: string) {
+  static async approveVersion(versionId: bigint, approverId: any, comments?: string) {
     return prisma.$transaction(async (tx) => {
       // Cập nhật approval status
       await (tx as any).bomApproval.update({
         where: {
           bomVersionId_approverId: {
             bomVersionId: versionId,
-            approverId
+            approverId: BigInt(approverId)
           }
         },
         data: {
@@ -311,7 +311,7 @@ export class BomsService {
           where: { id: versionId },
           data: {
             status: 'APPROVED',
-            approvedById: approverId,
+            approvedById: BigInt(approverId),
             approvedAt: new Date()
           }
         });
@@ -353,14 +353,14 @@ export class BomsService {
   /**
    * Reject BOM version
    */
-  static async rejectVersion(versionId: bigint, approverId: bigint, comments?: string) {
+  static async rejectVersion(versionId: bigint, approverId: any, comments?: string) {
     return prisma.$transaction(async (tx) => {
       // Cập nhật approval status
       await (tx as any).bomApproval.update({
         where: {
           bomVersionId_approverId: {
             bomVersionId: versionId,
-            approverId
+            approverId: BigInt(approverId)
           }
         },
         data: {
@@ -484,7 +484,7 @@ export class BomsService {
       const bom = await tx.bom.create({
         data: {
           code: bomData.code,
-          productStyleId: bomData.productStyleId,
+          productStyleId: BigInt(bomData.productStyleId),
           name: bomData.name,
           isActive: bomData.isActive ?? true
         }
@@ -495,7 +495,7 @@ export class BomsService {
       await tx.bomLine.createMany({
         data: templateLines.map((line: any, index: number) => ({
           bomId: bom.id,
-          itemId: line.itemId,
+          itemId: BigInt(line.itemId),
           uom: line.uom || 'pcs',
           qtyPerUnit: new Prisma.Decimal(line.qtyPerUnit),
           wastagePercent: new Prisma.Decimal(line.wastagePercent || 0),
@@ -519,19 +519,48 @@ export class BomsService {
 
   /**
    * Helper method: Lấy unit cost của item
+   * Ưu tiên: 1. Last purchase price từ purchase order, 2. Default cost theo item type
    */
   private static async getItemUnitCost(itemId: string): Promise<number> {
     try {
-      // TODO: Implement logic để lấy cost từ:
-      // 1. Purchase history (last purchase price) 
-      // 2. Standard cost
-      // 3. Vendor price list
-      
-      // Tạm thời return 0 - sẽ implement sau khi có đủ data
-      return 0;
+      // 1. Lấy last purchase price từ purchase order lines
+      const lastPurchase = await (prisma as any).purchaseOrderLine.findFirst({
+        where: { 
+          itemId: BigInt(itemId),
+          purchaseOrder: { status: { in: ['CONFIRMED', 'RECEIVED'] } }
+        },
+        orderBy: { 
+          purchaseOrder: { orderDate: 'desc' }
+        },
+        select: { 
+          unitPrice: true,
+          purchaseOrder: { select: { orderDate: true } }
+        }
+      });
+
+      if (lastPurchase && lastPurchase.unitPrice) {
+        return Number(lastPurchase.unitPrice);
+      }
+
+      // 2. Lấy item type để set default cost
+      const item = await prisma.item.findUnique({
+        where: { id: BigInt(itemId) },
+        select: { itemType: true }
+      });
+
+      // 3. Default cost dựa trên item type
+      const defaultCosts = {
+        'FABRIC': 100000, // 100k VND/m
+        'ACCESSORY': 5000, // 5k VND/pcs  
+        'PACKING': 2000, // 2k VND/pcs
+        'OTHER': 10000 // 10k VND/pcs
+      };
+
+      const itemType = item?.itemType || 'OTHER';
+      return defaultCosts[itemType as keyof typeof defaultCosts] || 10000;
     } catch (error) {
       console.error('Error getting item unit cost:', error);
-      return 0;
+      return 10000; // Default cost
     }
   }
 
@@ -611,10 +640,10 @@ export class BomsService {
   }
 
   /**
-   * Get current BOM version
+   * Get current BOM version - Enhanced version with fallback
    */
   static async getCurrentVersion(bomId: bigint) {
-    const version = await (prisma as any).bomVersion.findFirst({
+    let version = await (prisma as any).bomVersion.findFirst({
       where: {
         bomId,
         isCurrent: true
@@ -631,8 +660,31 @@ export class BomsService {
       }
     });
 
+    // If no current version exists, try to find any version
     if (!version) {
-      throw new Error('No current version found for this BOM');
+      version = await (prisma as any).bomVersion.findFirst({
+        where: { bomId },
+        include: {
+          bom: {
+            include: {
+              lines: {
+                include: { item: true },
+                orderBy: { id: 'asc' }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // If still no version exists, return BOM info without version
+    if (!version) {
+      const bom = await this.get(bomId);
+      return {
+        message: 'No version found for this BOM. This is a basic BOM without versioning.',
+        bom,
+        versionInfo: null
+      };
     }
 
     return {

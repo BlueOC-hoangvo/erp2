@@ -99,10 +99,16 @@ export const compareVersionsDto = z.object({
   versionId2: zBigInt,
 });
 
+// Fix: Create a simplified DTO without conflicting validation
 export const bomTemplateQueryDto = z.object({
   q: z.string().trim().optional(),
   category: z.string().trim().optional(),
   
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(20),
+});
+
+// Alternative: Create a template-specific params DTO if needed
+export const bomTemplateIdParam = z.object({ 
+  templateId: zBigInt 
 });

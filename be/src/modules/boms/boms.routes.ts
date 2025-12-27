@@ -16,12 +16,18 @@ import {
   bomTemplateCreateDto,
   bomFromTemplateDto,
   compareVersionsDto,
-  bomTemplateQueryDto
+  bomTemplateQueryDto,
+  bomTemplateIdParam
 } from "./boms.dto";
 
 const r = Router();
 
-// Basic CRUD operations
+// CRITICAL: Order matters! Specific routes must come before generic routes
+
+// BOM Templates - Query routes FIRST (before /:id)
+r.get("/templates", validate(bomTemplateQueryDto, "query"), BomsController.listTemplates);
+
+// Basic CRUD operations - AFTER specific routes
 r.get("/", validate(bomQueryDto, "query"), BomsController.list);
 r.get("/:id", validate(zIdParam, "params"), BomsController.get);
 
@@ -42,10 +48,9 @@ r.post("/versions/:versionId/approve", auth, validate(zIdParam, "params"), valid
 r.post("/versions/:versionId/reject", auth, validate(zIdParam, "params"), validate(approveRejectDto, "body"), BomsController.rejectVersion);
 r.get("/versions/compare", validate(compareVersionsDto, "query"), BomsController.compareVersions);
 
-// BOM Templates
+// BOM Templates - Param routes AFTER specific routes
 r.post("/templates", auth, validate(bomTemplateCreateDto, "body"), BomsController.createTemplate);
-r.get("/templates/:templateId", validate(zIdParam, "params"), BomsController.getTemplate);
-r.post("/templates/:templateId/create-bom", auth, validate(zIdParam, "params"), validate(bomFromTemplateDto, "body"), BomsController.createBomFromTemplate);
-r.get("/templates", validate(bomTemplateQueryDto, "query"), BomsController.listTemplates);
+r.get("/templates/:templateId", validate(bomTemplateIdParam, "params"), BomsController.getTemplate);
+r.post("/templates/:templateId/create-bom", auth, validate(bomTemplateIdParam, "params"), validate(bomFromTemplateDto, "body"), BomsController.createBomFromTemplate);
 
 export default r;

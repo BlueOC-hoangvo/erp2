@@ -100,6 +100,7 @@ export class ProductionOrdersService {
           ...(data.salesOrderItemId !== undefined ? { salesOrderItemId: data.salesOrderItemId } : {}),
           ...(userId !== null ? { createdById: userId } : {}), // ✅ không đưa undefined
           ...(data.startDate !== undefined ? { startDate: data.startDate } : {}),
+          ...(data.endDate !== undefined ? { endDate: data.endDate } : {}), // ✅ Thêm endDate field
           ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
           ...(data.note !== undefined ? { note: data.note } : {}),
   
@@ -147,6 +148,7 @@ export class ProductionOrdersService {
           ...(data.productStyleId !== undefined ? { productStyleId: data.productStyleId } : {}),
           ...(data.qtyPlan !== undefined ? { qtyPlan: new Prisma.Decimal(data.qtyPlan) } : {}),
           ...(data.startDate !== undefined ? { startDate: data.startDate } : {}),
+          ...(data.endDate !== undefined ? { endDate: data.endDate } : {}), // ✅ Thêm endDate field
           ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
           ...(data.status !== undefined ? { status: data.status } : {}),
           ...(data.note !== undefined ? { note: data.note } : {}),

@@ -1,4 +1,13 @@
-// BOM Types based on backend structure
+// BOM Types based on actual API test results - Updated for production compatibility
+// API Response wrapper types (Actual structure from backend tests)
+export interface ApiResponse<T> {
+  data: T;
+  meta: null;
+  error: {
+    message: string;
+    details?: any;
+  } | null;
+}
 
 export interface Bom {
   id: string;
@@ -7,9 +16,15 @@ export interface Bom {
   productStyleId: string;
   productStyle?: ProductStyle;
   isActive: boolean;
+  createdById?: string;
+  createdBy?: User;
   createdAt?: string;
   updatedAt?: string;
+  note?: string; // Added based on actual API test results
   lines?: BomLine[];
+  currentVersion?: BomVersion;
+  totalLines?: number;
+  totalMaterialCost?: number;
 }
 
 export interface BomLine {
@@ -18,8 +33,8 @@ export interface BomLine {
   itemId: string;
   item?: Item;
   uom: string;
-  qtyPerUnit: number;
-  wastagePercent: number;
+  qtyPerUnit: string; // Decimal format from API
+  wastagePercent: string; // Decimal format from API
   lineNo?: number;
   note?: string;
   isOptional?: boolean;
@@ -41,6 +56,12 @@ export interface ProductStyle {
   code?: string;
   name: string;
   description?: string;
+}
+
+export interface User {
+  id: string;
+  fullName: string;
+  email?: string;
 }
 
 // BOM Versioning Types
@@ -72,7 +93,7 @@ export interface BomApproval {
   createdAt?: string;
 }
 
-// BOM Explosion Types
+// BOM Explosion Types (Simplified based on actual API test results)
 export interface BomExplosionItem {
   itemId: string;
   itemName: string;
@@ -80,18 +101,17 @@ export interface BomExplosionItem {
   uom: string;
   qtyRequired: number;
   itemType?: string;
-  level?: number;
-  isOptional?: boolean;
-  parentItemId?: string;
+  // Simplified structure - no calculations, level, sourceBomLineId, etc.
 }
 
 export interface BomExplosionResult {
   items: BomExplosionItem[];
   totalItems: number;
   quantity: number;
+  // Simplified structure - no bomId, bomVersionId, summary, etc.
 }
 
-// BOM Cost Analysis Types
+// BOM Cost Analysis Types (Simplified based on actual API test results)
 export interface BomCostItem extends BomExplosionItem {
   unitCost?: number;
   totalCost?: number;
@@ -100,14 +120,15 @@ export interface BomCostItem extends BomExplosionItem {
 export interface BomCostAnalysis {
   totalMaterialCost: number;
   materialCosts: BomCostItem[];
-  quantity: number;
+  // Simplified structure - no bomId, bomVersionId, quantity, currency, costType, summary
 }
 
-// BOM Lead Time Types
+// BOM Lead Time Types (Simplified based on actual API test results)
 export interface BomLeadTime {
   maxLeadTime: number;
   totalLeadTime: number;
   estimatedDays: number;
+  // Simplified structure - matches actual API response
 }
 
 // BOM Templates Types
@@ -197,7 +218,14 @@ export interface CreateBomVersionRequest {
   description?: string;
   effectiveFrom?: string;
   parentVersionId?: string;
-  createdById: string;
+  createdById?: string;
+  changes?: Array<{
+    type: 'LINE_MODIFIED' | 'LINE_ADDED' | 'LINE_REMOVED';
+    field?: string;
+    oldValue?: any;
+    newValue?: any;
+    description?: string;
+  }>;
 }
 
 export interface SubmitForApprovalRequest {
@@ -263,3 +291,23 @@ export interface BomTemplateFormData {
   category?: string;
   lines: BomLineFormData[];
 }
+
+// Special response types for API endpoints
+export interface BomCurrentVersionResponse {
+  message?: string; // When no version found
+  bom?: Bom; // When version is found
+  version?: BomVersion; // Alternative structure
+}
+
+// Versioning response types
+export interface BomVersionListResponse {
+  items: BomVersion[];
+  total: number;
+}
+
+export interface BomVersionApprovalResponse {
+  success: boolean;
+  message: string;
+  data?: BomVersion;
+}
+

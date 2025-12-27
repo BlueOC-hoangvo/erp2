@@ -43,6 +43,10 @@ export const BomList: React.FC<BomListProps> = ({ onCreate, onEdit, onView }) =>
 
   const { data: bomResponse, isLoading, error } = useBoms(params);
   const deleteMutation = useDeleteBom();
+  
+  console.log('🔥 COMPONENT - BomList render with bomResponse:', bomResponse);
+  console.log('🔥 COMPONENT - BomList isLoading:', isLoading);
+  console.log('🔥 COMPONENT - BomList error:', error);
 
   const handleSearch = () => {
     setParams(prev => ({ ...prev, q: searchTerm, page: 1 }));
@@ -195,14 +199,14 @@ export const BomList: React.FC<BomListProps> = ({ onCreate, onEdit, onView }) =>
                   </div>
                 </TableCell>
               </TableRow>
-            ) : bomResponse?.data?.items?.length === 0 ? (
+            ) : bomResponse?.items?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                   Chưa có BOM nào
                 </TableCell>
               </TableRow>
             ) : (
-              bomResponse?.data?.items?.map((bom: any) => (
+              bomResponse?.items?.map((bom: any) => (
                 <TableRow key={bom.id} className="hover:bg-gray-50">
                   <TableCell className="font-medium">{bom.code || 'N/A'}</TableCell>
                   <TableCell>
@@ -275,28 +279,28 @@ export const BomList: React.FC<BomListProps> = ({ onCreate, onEdit, onView }) =>
         </Table>
 
         {/* Pagination */}
-        {bomResponse?.data && bomResponse.data.total > 0 && (
+        {bomResponse && bomResponse.total > 0 && (
           <div className="px-6 py-4 border-t flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Hiển thị {((bomResponse.data.page - 1) * bomResponse.data.pageSize) + 1} - {Math.min(bomResponse.data.page * bomResponse.data.pageSize, bomResponse.data.total)} của {bomResponse.data.total} kết quả
+              Hiển thị {((bomResponse.page - 1) * bomResponse.pageSize) + 1} - {Math.min(bomResponse.page * bomResponse.pageSize, bomResponse.total)} của {bomResponse.total} kết quả
             </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handlePageChange(bomResponse.data.page - 1)}
-                disabled={bomResponse.data.page === 1}
+                onClick={() => handlePageChange(bomResponse.page - 1)}
+                disabled={bomResponse.page === 1}
               >
                 Trước
               </Button>
               <span className="text-sm text-gray-700">
-                Trang {bomResponse.data.page} / {Math.ceil(bomResponse.data.total / bomResponse.data.pageSize)}
+                Trang {bomResponse.page} / {Math.ceil(bomResponse.total / bomResponse.pageSize)}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handlePageChange(bomResponse.data.page + 1)}
-                disabled={bomResponse.data.page >= Math.ceil(bomResponse.data.total / bomResponse.data.pageSize)}
+                onClick={() => handlePageChange(bomResponse.page + 1)}
+                disabled={bomResponse.page >= Math.ceil(bomResponse.total / bomResponse.pageSize)}
               >
                 Sau
               </Button>

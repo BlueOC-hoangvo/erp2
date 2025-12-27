@@ -5,7 +5,6 @@ import {
   ArrowLeftIcon,
   ArrowsRightLeftIcon,
   DocumentArrowDownIcon,
-  EyeIcon,
   PlusIcon,
   MinusIcon,
   CheckIcon,
@@ -14,26 +13,13 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Select } from '@/components/ui/Select';
 import { toast } from 'react-hot-toast';
 import { useCompareVersions } from '../hooks/useBoms';
-import { urls } from '@/routes/urls';
-
-interface BomDifference {
-  type: 'ADDED' | 'REMOVED' | 'MODIFIED';
-  lineId?: string;
-  field?: string;
-  oldValue?: any;
-  newValue?: any;
-  description?: string;
-  itemName?: string;
-  itemSku?: string;
-}
+import type { BomVersionComparison, BomDifference } from '../types/bom.types';
 
 export const BomComparison: React.FC = () => {
   const { versionId1, versionId2 } = useParams<{ versionId1: string; versionId2: string }>();
@@ -57,70 +43,25 @@ export const BomComparison: React.FC = () => {
     selectedVersion2
   );
 
-  // Mock comparison data - Replace with actual API response
-  const mockComparison = useMemo(() => {
-    if (!selectedVersion1 || !selectedVersion2 || selectedVersion1 === selectedVersion2) {
+  // Process comparison data
+  const comparison = useMemo(() => {
+    if (!comparisonData || !selectedVersion1 || !selectedVersion2 || selectedVersion1 === selectedVersion2) {
       return null;
     }
 
-    return {
-      version1: mockVersions.find(v => v.id === selectedVersion1),
-      version2: mockVersions.find(v => v.id === selectedVersion2),
-      differences: [
-        {
-          type: 'MODIFIED' as const,
-          lineId: '1',
-          field: 'qtyPerUnit',
-          oldValue: 1.5,
-          newValue: 2.0,
-          description: 'Thay đổi số lượng nguyên liệu',
-          itemName: 'Vải Cotton',
-          itemSku: 'FAB001'
-        },
-        {
-          type: 'ADDED' as const,
-          lineId: '4',
-          field: null,
-          oldValue: null,
-          newValue: null,
-          description: 'Thêm nguyên liệu mới',
-          itemName: 'Nhãn mác',
-          itemSku: 'LAB001'
-        },
-        {
-          type: 'REMOVED' as const,
-          lineId: '2',
-          field: null,
-          oldValue: null,
-          newValue: null,
-          description: 'Loại bỏ nguyên liệu không cần thiết',
-          itemName: 'Chỉ màu đỏ',
-          itemSku: 'THR002'
-        },
-        {
-          type: 'MODIFIED' as const,
-          lineId: '3',
-          field: 'wastagePercent',
-          oldValue: 5,
-          newValue: 8,
-          description: 'Tăng phần trăm hao hụt',
-          itemName: 'Nút áo',
-          itemSku: 'BTN001'
-        }
-      ] as BomDifference[]
-    };
-  }, [selectedVersion1, selectedVersion2]);
+    return comparisonData;
+  }, [comparisonData, selectedVersion1, selectedVersion2]);
 
   // Filter differences based on selected filter
   const filteredDifferences = useMemo(() => {
-    if (!mockComparison?.differences) return [];
+    if (!comparison?.differences) return [];
     
     if (filterChanges === 'all') {
-      return mockComparison.differences;
+      return comparison.differences;
     }
     
-    return mockComparison.differences.filter(diff => diff.type === filterChanges);
-  }, [mockComparison, filterChanges]);
+    return comparison.differences.filter(diff => diff.type === filterChanges);
+  }, [comparison, filterChanges]);
 
   const handleVersionChange = (versionId: string, position: '1' | '2') => {
     if (position === '1') {
@@ -131,7 +72,7 @@ export const BomComparison: React.FC = () => {
   };
 
   const handleExport = () => {
-    if (!mockComparison) {
+    if (!comparison) {
       toast.error('Vui lòng chọn 2 phiên bản để so sánh');
       return;
     }
@@ -186,11 +127,11 @@ export const BomComparison: React.FC = () => {
   };
 
   const calculateSummary = () => {
-    if (!mockComparison?.differences) return { added: 0, removed: 0, modified: 0, total: 0 };
+    if (!comparison?.differences) return { added: 0, removed: 0, modified: 0, total: 0 };
     
-    const added = mockComparison.differences.filter(d => d.type === 'ADDED').length;
-    const removed = mockComparison.differences.filter(d => d.type === 'REMOVED').length;
-    const modified = mockComparison.differences.filter(d => d.type === 'MODIFIED').length;
+    const added = comparison.differences.filter(d => d.type === 'ADDED').length;
+    const removed = comparison.differences.filter(d => d.type === 'REMOVED').length;
+    const modified = comparison.differences.filter(d => d.type === 'MODIFIED').length;
     
     return { added, removed, modified, total: added + removed + modified };
   };
@@ -333,7 +274,7 @@ export const BomComparison: React.FC = () => {
       </Card>
 
       {/* Comparison Results */}
-      {mockComparison ? (
+      {comparison ? (
         <div className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -369,20 +310,20 @@ export const BomComparison: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="border-r pr-4">
                   <h3 className="font-semibold text-gray-900 mb-2">
-                    Phiên bản 1: {mockComparison.version1?.versionNo}
+                    Phiên bản 1: {comparison.version1?.versionNo}
                   </h3>
                   <div className="space-y-1 text-sm text-gray-600">
-                    <div>Trạng thái: {mockComparison.version1?.status}</div>
-                    <div>Ngày tạo: {new Date(mockComparison.version1?.createdAt || '').toLocaleDateString('vi-VN')}</div>
+                    <div>Trạng thái: {comparison.version1?.status}</div>
+                    <div>ID: {comparison.version1?.id}</div>
                   </div>
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">
-                    Phiên bản 2: {mockComparison.version2?.versionNo}
+                    Phiên bản 2: {comparison.version2?.versionNo}
                   </h3>
                   <div className="space-y-1 text-sm text-gray-600">
-                    <div>Trạng thái: {mockComparison.version2?.status}</div>
-                    <div>Ngày tạo: {new Date(mockComparison.version2?.createdAt || '').toLocaleDateString('vi-VN')}</div>
+                    <div>Trạng thái: {comparison.version2?.status}</div>
+                    <div>ID: {comparison.version2?.id}</div>
                   </div>
                 </div>
               </div>
@@ -415,8 +356,7 @@ export const BomComparison: React.FC = () => {
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
                               {getDifferenceBadge(difference.type)}
-                              <span className="font-medium">{difference.itemName}</span>
-                              <span className="text-sm text-gray-500">({difference.itemSku})</span>
+                              <span className="font-medium">{difference.field || 'Không xác định'}</span>
                             </div>
                             
                             <div className="text-sm text-gray-700 mb-2">

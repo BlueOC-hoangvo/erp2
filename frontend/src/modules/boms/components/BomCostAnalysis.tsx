@@ -23,8 +23,8 @@ import { Select } from '@/components/ui/Select';
 import { Progress } from '@/components/ui/Progress';
 import { toast } from 'react-hot-toast';
 import { useBomCost } from '../hooks/useBoms';
-import { urls } from '@/routes/urls';
-import { bomUtils } from '../api/bom.api';
+// import { urls } from '@/routes/urls';
+
 
 export const BomCostAnalysis: React.FC = () => {
   const { id: bomId } = useParams<{ id: string }>();
@@ -42,9 +42,9 @@ export const BomCostAnalysis: React.FC = () => {
 
   // Process cost data for analysis
   const processedData = useMemo(() => {
-    if (!costData?.data?.materialCosts) return { items: [], total: 0, summary: {} };
+    if (!costData?.materialCosts) return { items: [], total: 0, summary: {} };
 
-    const items = costData.data.materialCosts;
+    const items = costData.materialCosts;
     let filteredItems = [...items];
 
     // Sort items
@@ -55,8 +55,8 @@ export const BomCostAnalysis: React.FC = () => {
         case 'cost':
           return (b.totalCost || 0) - (a.totalCost || 0);
         case 'percentage':
-          const aPercent = ((a.totalCost || 0) / costData.data.totalMaterialCost) * 100;
-          const bPercent = ((b.totalCost || 0) / costData.data.totalMaterialCost) * 100;
+          const aPercent = ((a.totalCost || 0) / costData.totalMaterialCost) * 100;
+          const bPercent = ((b.totalCost || 0) / costData.totalMaterialCost) * 100;
           return bPercent - aPercent;
         default:
           return 0;
@@ -80,14 +80,14 @@ export const BomCostAnalysis: React.FC = () => {
         items: Object.entries(grouped).map(([type, data]) => ({
           type,
           ...data,
-          percentage: (data.total / costData.data.totalMaterialCost) * 100
+          percentage: (data.total / costData.totalMaterialCost) * 100
         })),
-        total: costData.data.totalMaterialCost,
+        total: costData.totalMaterialCost,
         summary: {
           totalItems: items.length,
           totalQuantity: quantity,
-          averageCost: costData.data.totalMaterialCost / quantity,
-          costPerUnit: costData.data.totalMaterialCost / quantity,
+          averageCost: costData.totalMaterialCost / quantity,
+          costPerUnit: costData.totalMaterialCost / quantity,
           materialTypes: Object.keys(grouped).length
         }
       };
@@ -95,12 +95,12 @@ export const BomCostAnalysis: React.FC = () => {
 
     return {
       items: filteredItems,
-      total: costData.data.totalMaterialCost,
+      total: costData.totalMaterialCost,
       summary: {
         totalItems: items.length,
         totalQuantity: quantity,
-        averageCost: costData.data.totalMaterialCost / quantity,
-        costPerUnit: costData.data.totalMaterialCost / quantity,
+        averageCost: costData.totalMaterialCost / quantity,
+        costPerUnit: costData.totalMaterialCost / quantity,
         materialTypes: new Set(items.map(item => item.itemType)).size
       }
     };
@@ -108,16 +108,16 @@ export const BomCostAnalysis: React.FC = () => {
 
   // Calculate cost distribution for visualization
   const costDistribution = useMemo(() => {
-    if (!costData?.data?.materialCosts) return [];
+    if (!costData?.materialCosts) return [];
 
-    const items = costData.data.materialCosts
+    const items = costData.materialCosts
       .sort((a, b) => (b.totalCost || 0) - (a.totalCost || 0))
       .slice(0, 10); // Top 10 most expensive items
 
     return items.map(item => ({
       name: item.itemName || 'Unknown',
       cost: item.totalCost || 0,
-      percentage: ((item.totalCost || 0) / costData.data.totalMaterialCost) * 100,
+      percentage: ((item.totalCost || 0) / costData.totalMaterialCost) * 100,
       quantity: item.qtyRequired
     }));
   }, [costData]);
@@ -177,7 +177,7 @@ export const BomCostAnalysis: React.FC = () => {
           </AlertDescription>
         </Alert>
         <div className="mt-4">
-          <Button onClick={() => navigate(urls.BOMS_DETAIL(bomId || ''))}>
+          <Button onClick={() => navigate(-1)}>
             <ArrowLeftIcon className="w-4 h-4 mr-2" />
             Quay lại BOM
           </Button>
@@ -194,7 +194,7 @@ export const BomCostAnalysis: React.FC = () => {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => navigate(urls.BOMS_DETAIL(bomId || ''))}
+            onClick={() => navigate(-1)}
           >
             <ArrowLeftIcon className="w-4 h-4 mr-2" />
             Quay lại BOM
@@ -484,7 +484,7 @@ export const BomCostAnalysis: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {processedData.items.map((group: any, index) => (
+                {processedData.items.map((group: any) => (
                   <TableRow key={group.type}>
                     <TableCell>
                       <div className="flex items-center space-x-2">

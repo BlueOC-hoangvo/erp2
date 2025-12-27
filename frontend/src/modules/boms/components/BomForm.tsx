@@ -1,4 +1,4 @@
-// BOM Form Component - Create/Edit BOM với validation đầy đủ
+// BOM Form Component - Updated for real API integration
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -17,8 +17,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { toast } from 'react-hot-toast';
 import { useBom, useCreateBom, useUpdateBom } from '../hooks/useBoms';
-import type { Bom, BomFormData, BomLineFormData } from '../types/bom.types';
-import { urls } from '@/routes/urls';
+import type { BomFormData, BomLineFormData } from '../types/bom.types';
 
 // Zod validation schema
 const bomLineSchema = z.object({
@@ -88,7 +87,7 @@ export const BomForm: React.FC<BomFormProps> = ({
     setValue,
     reset,
     formState: { errors, isDirty }
-  } = useForm<BomFormDataType>({
+  } = useForm({
     defaultValues: {
       code: '',
       name: '',
@@ -105,7 +104,7 @@ export const BomForm: React.FC<BomFormProps> = ({
           leadTimeDays: 0,
         }
       ],
-    },
+    } as BomFormDataType,
   });
 
 
@@ -119,13 +118,12 @@ export const BomForm: React.FC<BomFormProps> = ({
   // Load existing BOM data if editing
   useEffect(() => {
     if (mode === 'edit' && existingBom) {
-      const bomData = existingBom.data;
       reset({
-        code: bomData.code || '',
-        name: bomData.name,
-        productStyleId: bomData.productStyleId,
-        isActive: bomData.isActive,
-        lines: bomData.lines?.map(line => ({
+        code: existingBom.code || '',
+        name: existingBom.name,
+        productStyleId: existingBom.productStyleId,
+        isActive: existingBom.isActive,
+        lines: existingBom.lines?.map(line => ({
           itemId: line.itemId,
           uom: line.uom,
           qtyPerUnit: Number(line.qtyPerUnit),
@@ -139,6 +137,10 @@ export const BomForm: React.FC<BomFormProps> = ({
   }, [existingBom, mode, reset]);
 
   const handleFormSubmit = async (data: BomFormDataType) => {
+    console.log('🔥 FORM - BomForm handleFormSubmit called');
+    console.log('🔥 FORM - BomForm mode:', mode);
+    console.log('🔥 FORM - BomForm data:', data);
+    
     setIsSubmitting(true);
     try {
       const submitData = {
@@ -157,20 +159,23 @@ export const BomForm: React.FC<BomFormProps> = ({
         })),
       };
 
-      if (mode === 'create') {
-        await createMutation.mutateAsync(submitData);
-        toast.success('Tạo BOM thành công!');
-        navigate(urls.BOMS);
-      } else if (mode === 'edit' && id) {
-        await updateMutation.mutateAsync({ id, data: submitData });
-        toast.success('Cập nhật BOM thành công!');
-        navigate(urls.BOMS_DETAIL(id));
-      }
+      console.log('🔥 FORM - BomForm submitData:', submitData);
 
-      if (onSubmit) {
-        onSubmit(data);
+      if (mode === 'create') {
+        console.log('🔥 FORM - BomForm creating new BOM');
+        const result = await createMutation.mutateAsync(submitData);
+        console.log('🔥 FORM - BomForm create result:', result);
+        toast.success('Tạo BOM thành công!');
+        navigate('/boms');
+      } else if (mode === 'edit' && id) {
+        console.log('🔥 FORM - BomForm updating BOM:', id);
+        const result = await updateMutation.mutateAsync({ id, data: submitData });
+        console.log('🔥 FORM - BomForm update result:', result);
+        toast.success('Cập nhật BOM thành công!');
+        navigate(`/boms/${id}`);
       }
     } catch (error: any) {
+      console.log('🔥 FORM - BomForm error:', error);
       toast.error(error.message || 'Có lỗi xảy ra');
     } finally {
       setIsSubmitting(false);
@@ -187,9 +192,9 @@ export const BomForm: React.FC<BomFormProps> = ({
 
   const handleNavigateBack = () => {
     if (mode === 'edit' && id) {
-      navigate(urls.BOMS_DETAIL(id));
+      navigate(`/boms/${id}`);
     } else {
-      navigate(urls.BOMS);
+      navigate('/boms');
     }
   };
 

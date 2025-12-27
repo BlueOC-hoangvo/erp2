@@ -4,12 +4,21 @@ import { BomsService } from "./boms.service";
 
 export class BomsController {
   static async list(req: Request, res: Response, next: NextFunction) {
-    try { return ok(res, await BomsService.list(req.validated!.query)); }
+    try { 
+      const query = (req as any).validated?.query || req.query;
+      return ok(res, await BomsService.list(query || {})); 
+    }
     catch (e) { return next(e); }
   }
 
   static async get(req: Request, res: Response, next: NextFunction) {
-    try { return ok(res, await BomsService.get(BigInt(req.validated!.params.id))); }
+    try { 
+      const id = (req as any).validated?.params?.id || req.params?.id;
+      if (!id || id === 'templates') {
+        return next(new Error('Invalid BOM ID'));
+      }
+      return ok(res, await BomsService.get(BigInt(id))); 
+    }
     catch (e) { return next(e); }
   }
 

@@ -1,5 +1,5 @@
-// BOM API Services
-import { api } from '@/lib/api';
+// BOM API Services - Real API implementation
+import { api, unwrap } from '@/lib/api';
 import type {
   Bom,
   BomListParams,
@@ -18,99 +18,222 @@ import type {
   CreateBomTemplateRequest,
   CreateBomFromTemplateRequest,
   BomVersionComparison,
-  
 } from '../types/bom.types';
 
-// Base BOM API endpoints
-const BOM_BASE = '/boms';
-
-// Basic BOM CRUD operations
+// Real API implementation
 export const bomApi = {
   // List BOMS with pagination and filters
-  list: (params: BomListParams) =>
-    api.get<BomListResponse>(BOM_BASE, { params }),
+  list: async (params: BomListParams = {}) => {
+    console.log('🔥 BOM API - List called with params:', params);
+    
+    const queryParams = new URLSearchParams();
+    if (params.q) queryParams.append('q', params.q);
+    if (params.productStyleId) queryParams.append('productStyleId', params.productStyleId);
+    if (params.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+    
+    const url = `/boms${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    console.log('🔥 BOM API - Making request to:', url);
+    
+    const response = await unwrap<{ items: Bom[]; page: number; pageSize: number; total: number }>(
+      api.get(url)
+    );
+    
+    console.log('🔥 BOM API - Returning response:', response);
+    return {
+      items: response.data.items || [],
+      page: response.data.page || 1,
+      pageSize: response.data.pageSize || 10,
+      total: response.data.total || 0
+    };
+  },
 
   // Get single BOM by ID
-  get: (id: string) =>
-    api.get<Bom>(`${BOM_BASE}/${id}`),
+  get: async (id: string) => {
+    console.log('🔥 BOM API - Get called with id:', id);
+    const response = await unwrap<Bom>(api.get(`/boms/${id}`));
+    console.log('🔥 BOM API - Returning BOM:', response);
+    return response.data;
+  },
 
   // Create new BOM
-  create: (data: CreateBomRequest) =>
-    api.post<{ id: string }>(BOM_BASE, data),
+  create: async (data: CreateBomRequest) => {
+    console.log('🔥 BOM API - Create called with data:', data);
+    const response = await unwrap<{ id: string }>(api.post('/boms', data));
+    console.log('🔥 BOM API - Created BOM with id:', response.data.id);
+    return response.data;
+  },
 
   // Update existing BOM
-  update: (id: string, data: UpdateBomRequest) =>
-    api.put(`${BOM_BASE}/${id}`, data),
+  update: async (id: string, data: UpdateBomRequest) => {
+    console.log('🔥 BOM API - Update called with id:', id, 'data:', data);
+    await unwrap(api.put(`/boms/${id}`, data));
+    console.log('🔥 BOM API - Updated BOM successfully');
+    return { ok: true };
+  },
 
   // Delete BOM
-  remove: (id: string) =>
-    api.delete(`${BOM_BASE}/${id}`),
+  remove: async (id: string) => {
+    console.log('🔥 BOM API - Remove called with id:', id);
+    await unwrap(api.delete(`/boms/${id}`));
+    console.log('🔥 BOM API - Removed BOM successfully');
+    return { ok: true };
+  },
 
-  // Enhanced BOM Features
+  // Enhanced BOM Features - Real API implementations
 
   // Explode BOM to get all required materials (multi-level)
-  explodeBom: (id: string, quantity: number = 1, bomVersionId?: string) =>
-    api.get<BomExplosionResult>(`${BOM_BASE}/${id}/explode`, {
-      params: { quantity, bomVersionId }
-    }),
+  explodeBom: async (id: string, quantity: number = 1, bomVersionId?: string) => {
+    console.log('🔥 BOM API - Explode called with id:', id, 'quantity:', quantity, 'versionId:', bomVersionId);
+    
+    const queryParams = new URLSearchParams();
+    queryParams.append('quantity', quantity.toString());
+    if (bomVersionId) queryParams.append('bomVersionId', bomVersionId);
+    
+    const response = await unwrap<{ items: any[]; totalItems: number; quantity: number }>(
+      api.get(`/boms/${id}/explode?${queryParams.toString()}`)
+    );
+    
+    console.log('🔥 BOM API - Explosion result:', response);
+    return {
+      items: response.data.items || [],
+      totalItems: response.data.totalItems || 0,
+      quantity: response.data.quantity || 1
+    };
+  },
 
   // Calculate BOM cost
-  calculateCost: (id: string, quantity: number = 1, bomVersionId?: string) =>
-    api.get<BomCostAnalysis>(`${BOM_BASE}/${id}/cost`, {
-      params: { quantity, bomVersionId }
-    }),
+  calculateCost: async (id: string, quantity: number = 1, bomVersionId?: string) => {
+    console.log('🔥 BOM API - Calculate cost called with id:', id, 'quantity:', quantity, 'versionId:', bomVersionId);
+    
+    const queryParams = new URLSearchParams();
+    queryParams.append('quantity', quantity.toString());
+    if (bomVersionId) queryParams.append('bomVersionId', bomVersionId);
+    
+    const response = await unwrap<{ totalMaterialCost: number; materialCosts: any[]; quantity: number }>(
+      api.get(`/boms/${id}/cost?${queryParams.toString()}`)
+    );
+    
+    console.log('🔥 BOM API - Cost analysis result:', response);
+    return {
+      totalMaterialCost: response.data.totalMaterialCost || 0,
+      materialCosts: response.data.materialCosts || [],
+      quantity: response.data.quantity || 1
+    };
+  },
 
   // Calculate BOM lead time
-  calculateLeadTime: (id: string, bomVersionId?: string) =>
-    api.get<BomLeadTime>(`${BOM_BASE}/${id}/lead-time`, {
-      params: { bomVersionId }
-    }),
+  calculateLeadTime: async (id: string, bomVersionId?: string) => {
+    console.log('🔥 BOM API - Calculate lead time called with id:', id, 'versionId:', bomVersionId);
+    
+    const queryParams = new URLSearchParams();
+    if (bomVersionId) queryParams.append('bomVersionId', bomVersionId);
+    
+    const response = await unwrap<{ maxLeadTime: number; totalLeadTime: number; estimatedDays: number }>(
+      api.get(`/boms/${id}/lead-time${queryParams.toString() ? `?${queryParams.toString()}` : ''}`)
+    );
+    
+    console.log('🔥 BOM API - Lead time result:', response);
+    return {
+      maxLeadTime: response.data.maxLeadTime || 0,
+      totalLeadTime: response.data.totalLeadTime || 0,
+      estimatedDays: response.data.estimatedDays || 0
+    };
+  },
 
-  // BOM Versioning Operations
+  // BOM Versioning Operations - Real API implementations
+  createVersion: async (bomId: string, data: CreateBomVersionRequest) => {
+    console.log('🔥 BOM API - Create version called with bomId:', bomId, 'data:', data);
+    const response = await unwrap<{ id: string; versionNo: string }>(
+      api.post(`/boms/${bomId}/versions`, data)
+    );
+    console.log('🔥 BOM API - Created version:', response);
+    return response.data;
+  },
 
-  // Create new BOM version
-  createVersion: (bomId: string, data: CreateBomVersionRequest) =>
-    api.post<{ id: string; versionNo: string }>(`${BOM_BASE}/${bomId}/versions`, data),
+  submitForApproval: async (versionId: string, data: SubmitForApprovalRequest) => {
+    console.log('🔥 BOM API - Submit for approval called with versionId:', versionId, 'data:', data);
+    await unwrap(api.post(`/boms/versions/${versionId}/submit-approval`, data));
+    console.log('🔥 BOM API - Submitted for approval successfully');
+    return { ok: true };
+  },
 
-  // Submit BOM version for approval
-  submitForApproval: (versionId: string, data: SubmitForApprovalRequest) =>
-    api.post(`${BOM_BASE}/versions/${versionId}/submit-approval`, data),
+  approveVersion: async (versionId: string, data: ApproveRejectRequest) => {
+    console.log('🔥 BOM API - Approve version called with versionId:', versionId, 'data:', data);
+    await unwrap(api.post(`/boms/versions/${versionId}/approve`, data));
+    console.log('🔥 BOM API - Approved version successfully');
+    return { ok: true };
+  },
 
-  // Approve BOM version
-  approveVersion: (versionId: string, data: ApproveRejectRequest) =>
-    api.post(`${BOM_BASE}/versions/${versionId}/approve`, data),
+  rejectVersion: async (versionId: string, data: ApproveRejectRequest) => {
+    console.log('🔥 BOM API - Reject version called with versionId:', versionId, 'data:', data);
+    await unwrap(api.post(`/boms/versions/${versionId}/reject`, data));
+    console.log('🔥 BOM API - Rejected version successfully');
+    return { ok: true };
+  },
 
-  // Reject BOM version
-  rejectVersion: (versionId: string, data: ApproveRejectRequest) =>
-    api.post(`${BOM_BASE}/versions/${versionId}/reject`, data),
+  getCurrentVersion: async (bomId: string) => {
+    console.log('🔥 BOM API - Get current version called with bomId:', bomId);
+    const response = await unwrap<BomVersion>(api.get(`/boms/${bomId}/current-version`));
+    console.log('🔥 BOM API - Current version:', response);
+    return response.data;
+  },
 
-  // Get current BOM version
-  getCurrentVersion: (bomId: string) =>
-    api.get<BomVersion>(`${BOM_BASE}/${bomId}/current-version`),
+  compareVersions: async (versionId1: string, versionId2: string) => {
+    console.log('🔥 BOM API - Compare versions called with versionId1:', versionId1, 'versionId2:', versionId2);
+    const response = await unwrap<BomVersionComparison>(
+      api.get(`/boms/versions/compare?versionId1=${versionId1}&versionId2=${versionId2}`)
+    );
+    console.log('🔥 BOM API - Version comparison result:', response);
+    return response.data;
+  },
 
-  // Compare BOM versions
-  compareVersions: (versionId1: string, versionId2: string) =>
-    api.get<BomVersionComparison>(`${BOM_BASE}/versions/compare`, {
-      params: { versionId1, versionId2 }
-    }),
+  // BOM Template Operations - Real API implementations
+  listTemplates: async (params?: { page?: number; pageSize?: number; q?: string }) => {
+    console.log('🔥 TEMPLATE API - listTemplates called with params:', params);
+    
+    const queryParams = new URLSearchParams();
+    if (params?.q) queryParams.append('q', params.q);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+    
+    const url = `/boms/templates${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    console.log('🔥 TEMPLATE API - Making request to:', url);
+    
+    const response = await unwrap<{ items: BomTemplate[]; page: number; pageSize: number; total: number }>(
+      api.get(url)
+    );
+    
+    console.log('🔥 TEMPLATE API - Returning response:', response);
+    return {
+      items: response.data.items || [],
+      page: response.data.page || 1,
+      pageSize: response.data.pageSize || 10,
+      total: response.data.total || 0
+    };
+  },
 
-  // BOM Template Operations
+  getTemplate: async (templateId: string) => {
+    console.log('🔥 TEMPLATE API - getTemplate called with templateId:', templateId);
+    const response = await unwrap<BomTemplate>(api.get(`/boms/templates/${templateId}`));
+    console.log('🔥 TEMPLATE API - Returning template:', response);
+    return response.data;
+  },
 
-  // Create BOM template
-  createTemplate: (data: CreateBomTemplateRequest) =>
-    api.post<{ id: string }>(`${BOM_BASE}/templates`, data),
+  createTemplate: async (data: CreateBomTemplateRequest) => {
+    console.log('🔥 TEMPLATE API - createTemplate called with data:', data);
+    const response = await unwrap<{ id: string }>(api.post('/boms/templates', data));
+    console.log('🔥 TEMPLATE API - Created template with id:', response.data.id);
+    return response.data;
+  },
 
-  // Get BOM template
-  getTemplate: (templateId: string) =>
-    api.get<BomTemplate>(`${BOM_BASE}/templates/${templateId}`),
-
-  // Create BOM from template
-  createBomFromTemplate: (templateId: string, data: CreateBomFromTemplateRequest) =>
-    api.post<{ id: string }>(`${BOM_BASE}/templates/${templateId}/create-bom`, data),
-
-  // List BOM templates
-  listTemplates: () =>
-    api.get<BomTemplateListResponse>(`${BOM_BASE}/templates`),
+  createBomFromTemplate: async (templateId: string, data: CreateBomFromTemplateRequest) => {
+    console.log('🔥 TEMPLATE API - createBomFromTemplate called with templateId:', templateId, 'data:', data);
+    const response = await unwrap<{ id: string }>(api.post(`/boms/templates/${templateId}/create-bom`, data));
+    console.log('🔥 TEMPLATE API - Created BOM from template with id:', response.data.id);
+    return response.data;
+  },
 };
 
 // Additional utility functions

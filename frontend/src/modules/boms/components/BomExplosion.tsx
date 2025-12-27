@@ -47,9 +47,8 @@ export const BomExplosion: React.FC = () => {
 
   // Process explosion data for tree structure
   const processedData = useMemo(() => {
-    if (!explosionData?.data?.items) return [];
-
-    const items = explosionData.data.items;
+    if (!explosionData?.items) return [];
+    const items = explosionData.items;
     
     // Group by level if requested
     if (groupByLevel) {
@@ -106,9 +105,9 @@ export const BomExplosion: React.FC = () => {
 
   // Calculate totals
   const totals = useMemo(() => {
-    if (!explosionData?.data?.items) return { totalItems: 0, totalQty: 0, uniqueItems: 0 };
+    if (!explosionData?.items) return { totalItems: 0, totalQty: 0, uniqueItems: 0 };
 
-    const items = explosionData.data.items;
+    const items = explosionData.items;
     const uniqueItems = new Set(items.map(item => item.itemId)).size;
     const totalQty = items.reduce((sum, item) => sum + item.qtyRequired, 0);
 

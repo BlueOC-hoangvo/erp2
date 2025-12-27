@@ -34,11 +34,28 @@ const CreateTemplateModal: React.FC<CreateTemplateModalProps> = ({ isOpen, onClo
     category: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const createTemplateMutation = useCreateBomTemplate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement create template
-    toast.success('Tạo template thành công!');
-    onClose();
+    
+    try {
+      const templateData: CreateBomTemplateRequest = {
+        name: formData.name,
+        code: formData.code || undefined,
+        description: formData.description || undefined,
+        category: formData.category || undefined,
+        templateData: {
+          lines: [] // TODO: Get from existing BOM or user input
+        }
+      };
+
+      await createTemplateMutation.mutateAsync(templateData);
+      onClose();
+      setFormData({ name: '', code: '', description: '', category: '' });
+    } catch (error) {
+      // Error is handled by mutation's onError
+    }
   };
 
   return (
@@ -118,11 +135,29 @@ const UseTemplateModal: React.FC<UseTemplateModalProps> = ({ isOpen, onClose, te
     isActive: true
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const createBomFromTemplateMutation = useCreateBomFromTemplate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement create BOM from template
-    toast.success('Tạo BOM từ template thành công!');
-    onClose();
+    
+    try {
+      const bomData: CreateBomFromTemplateRequest = {
+        code: formData.code,
+        name: formData.name,
+        productStyleId: formData.productStyleId,
+        isActive: formData.isActive
+      };
+
+      await createBomFromTemplateMutation.mutateAsync({
+        templateId: template.id,
+        data: bomData
+      });
+      
+      onClose();
+      setFormData({ code: '', name: '', productStyleId: '', isActive: true });
+    } catch (error) {
+      // Error is handled by mutation's onError
+    }
   };
 
   return (
@@ -214,8 +249,14 @@ export const BomTemplates: React.FC = () => {
   const createTemplateMutation = useCreateBomTemplate();
   const createBomFromTemplateMutation = useCreateBomFromTemplate();
 
+  // Debug logging
+  console.log('🔥 COMPONENT - BomTemplates render with templatesResponse:', templatesResponse);
+  console.log('🔥 COMPONENT - BomTemplates isLoading:', isLoading);
+  console.log('🔥 COMPONENT - BomTemplates error:', error);
+
   // Use actual API data
-  const templates = templatesResponse?.data?.items || [];
+  const templates = templatesResponse?.items || [];
+  console.log('🔥 COMPONENT - BomTemplates templates array:', templates);
 
   const handleUseTemplate = (template: any) => {
     setUseTemplateModal({ isOpen: true, template });
