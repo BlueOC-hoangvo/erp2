@@ -1,11 +1,22 @@
+import type { Location } from "../types"
 
-export default function Location() {
+type Props = {
+    items: Location[];
+    loading?: boolean;
+    onView: (locationId: number) => void;
+    onEdit: (location: Location) => void;
+    onAdd?: () => void;
+    onDelete: (location: Location) => void;
+};
+
+export default function Location({ items, loading, onView, onEdit, onAdd, onDelete } : Props) {
     return (
         <>
             <div className="flex flex-row justify-between">
                 <h1 className="text-xl font-semibold">Danh sách địa điểm kho</h1>
                 <button
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    onClick={onAdd}
                 >
                     Thêm địa điểm kho mới
                 </button>
@@ -23,24 +34,43 @@ export default function Location() {
                     </thead>
 
                     <tbody className="text-sm">
-                        <tr className="border-t hover:bg-gray-50">
-                            <td className="px-4 py-3">
-                                <button className="text-blue-600 hover:underline">
-                                    WH-MAIN
-                                </button>
-                            </td>
-                            <td className="px-4 py-3">ZONE-A</td>
-                            <td className="px-4 py-3">Khu thành phẩm</td>
-                            <td className="px-4 py-3 text-center">---</td>
-                            <td className="px-4 py-3 space-x-2 whitespace-nowrap">
-                                <button className="px-3 py-1 border rounded hover:bg-gray-100">
-                                    Xem
-                                </button>
-                                <button className="px-3 py-1 border rounded hover:bg-gray-100">
-                                    Sửa
-                                </button>
-                            </td>
-                        </tr>
+                        {!loading && items.length === 0 && (
+                            <tr>
+                                <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
+                                    Không có dữ liệu
+                                </td>
+                            </tr>
+                        )}
+                        {!loading &&
+                            items.map((l) => {
+                                return (
+                                    <tr key={l.id} className={`border-t hover:bg-gray-50`}>
+                                        <td className="px-4 py-3">
+                                            <button className="text-blue-600 hover:underline">
+                                                {l.warehouseId}
+                                            </button>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <button className="text-blue-600 hover:underline">
+                                                {l.code}
+                                            </button>
+                                        </td>
+                                        <td className="px-4 py-3">{l.name}</td>
+                                        <td className="px-4 py-3 text-center">{l.parentId ?? "---"}</td>
+                                        <td className="px-4 py-3 space-x-2 whitespace-nowrap">
+                                            <button className="px-3 py-1 border rounded hover:bg-gray-100"
+                                                onClick={() => onView(l.id)}
+                                            >Xem</button>
+                                            <button className="px-3 py-1 border rounded hover:bg-gray-100"
+                                                onClick={() => onEdit(l)}
+                                            >Sửa</button>
+                                            <button className="px-3 py-1 border rounded hover:bg-gray-100"
+                                                onClick={() => onDelete(l)}
+                                            >Xóa</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                     </tbody>
                 </table>
             </div>

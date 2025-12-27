@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "@/modules/auth/components/ProtectedRoute";
 import MainLayout from "@/components/layout/MainLayout";
-import LoginView from "@/modules/auth/views/LoginView";
+import { LoginPage } from "@/modules/auth/pages/LoginPage";
 import ForbiddenPage from "@/components/error/403";
 import NotFoundPage from "@/components/error/404";
 import { URLS } from "./urls";
@@ -21,6 +21,7 @@ import CampaignForm from "@/modules/campaigns/views/CampaignForm";
 import CampaignDetail from "@/modules/campaigns/views/CampaignDetail";
 import ProductionOrdersList from "@/modules/production-orders/views/ProductionOrdersList";
 import { ProductionOrdersDetail } from "@/modules/production-orders/views/ProductionOrdersDetail";
+import ProductionOrderForm from "@/modules/production-orders/views/ProductionOrderForm";
 
 // Production modules
 import { ProductionPlansList } from "@/modules/production-plans/views/ProductionPlansList";
@@ -50,10 +51,28 @@ import AccountingDashboard from "@/modules/accounting/views/AccountingDashboard"
 import Suppliers from "@/modules/suppliers/views/Suppliers";
 import WarehouseLocation from "@/modules/warehouse-location/views/WarehouseLocation";
 
+// Product Management modules
+import ProductStyles from "@/modules/product-styles/views/ProductStyles";
+import Colors from "@/modules/product-styles/views/Colors";
+import Sizes from "@/modules/product-styles/views/Sizes";
+import ProductVariants from "@/modules/product-styles/views/ProductVariants";
+
+// BOM modules
+import { BomList } from "@/modules/boms/components/BomList";
+import { BomForm } from "@/modules/boms/components/BomForm";
+import { BomDetail } from "@/modules/boms/components/BomDetail";
+import { BomExplosion } from "@/modules/boms/components/BomExplosion";
+import { BomCostAnalysis } from "@/modules/boms/components/BomCostAnalysis";
+import { BomVersion } from "@/modules/boms/components/BomVersion";
+import { BomTemplates } from "@/modules/boms/components/BomTemplates";
+import { BomComparison } from "@/modules/boms/components/BomComparison";
+import { BomProductionIntegration } from "@/modules/boms/components/BomProductionIntegration";
+import { ProductionOrderFromBom } from "@/modules/production-orders/views/ProductionOrderFromBom";
+
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path={URLS.LOGIN} element={<LoginView />} />
+      <Route path={URLS.LOGIN} element={<LoginPage />} />
       <Route path={URLS.FORBIDDEN} element={<ForbiddenPage />} />
 
       <Route element={<ProtectedRoute />}>
@@ -71,6 +90,10 @@ export default function AppRoutes() {
           <Route
             path="/production/orders/:id"
             element={<ProductionOrdersDetail />}
+          />
+          <Route
+            path="/production/orders/create"
+            element={<ProductionOrderForm />}
           />
 
           {/* Supplier module */}
@@ -123,6 +146,25 @@ export default function AppRoutes() {
             path="/sales/quotations/:id/edit"
             element={<QuotationForm />}
           />
+
+          {/* Product Management routes */}
+          <Route path={URLS.PRODUCT_STYLES} element={<ProductStyles />} />
+          <Route path={URLS.COLORS} element={<Colors />} />
+          <Route path={URLS.SIZES} element={<Sizes />} />
+          <Route path={URLS.PRODUCT_VARIANTS} element={<ProductVariants />} />
+
+          {/* BOM routes */}
+          <Route path={URLS.BOMS} element={<BomList />} />
+          <Route path={URLS.BOMS_CREATE} element={<BomForm />} />
+          <Route path={URLS.BOMS_EDIT(":id")} element={<BomForm />} />
+          <Route path={URLS.BOMS_DETAIL(":id")} element={<BomDetail />} />
+          <Route path={URLS.BOMS_EXPLOSION(":id")} element={<BomExplosion />} />
+          <Route path={URLS.BOMS_COST(":id")} element={<BomCostAnalysis />} />
+          <Route path={URLS.BOMS_VERSIONS(":id")} element={<BomVersion />} />
+          <Route path={URLS.BOMS_COMPARISON} element={<BomComparison />} />
+          <Route path={URLS.BOMS_TEMPLATES} element={<BomTemplates />} />
+          <Route path={URLS.BOMS_PRODUCTION_INTEGRATION(":id")} element={<BomProductionIntegration />} />
+          <Route path={URLS.PRODUCTION_ORDER_FROM_BOM} element={<ProductionOrderFromBom />} />
 
           <Route path={URLS.FILES} element={<Files />} />
           <Route path={URLS.AUDIT_LOGS} element={<AuditLogs />} />

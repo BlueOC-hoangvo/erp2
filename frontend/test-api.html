@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test BOM API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-title { font-weight: bold; color: #1890ff; margin-bottom: 10px; }
+        .test-button { background: #1890ff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .test-button:hover { background: #40a9ff; }
+        .result { background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .error { background: #fff2e8; border: 1px solid #ffbb96; color: #d46b08; }
+        .log { background: #f0f0f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+        .loading { color: #1890ff; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 BOM API Test Page</h1>
+        <p>Trang này test trực tiếp BOM API để xem liệu có dữ liệu trả về không.</p>
+
+        <div class="test-section">
+            <div class="test-title">1. Test BOM List API</div>
+            <button class="test-button" onclick="testBomList()">Test BOM List</button>
+            <button class="test-button" onclick="clearLogs()">Clear Logs</button>
+            <div id="bom-list-result" class="result" style="display:none;"></div>
+            <div id="bom-list-logs" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">2. Test BOM Detail API</div>
+            <input type="text" id="bom-id" placeholder="Nhập BOM ID (ví dụ: 1)" value="1" style="padding: 5px; margin-right: 10px;">
+            <button class="test-button" onclick="testBomDetail()">Test BOM Detail</button>
+            <div id="bom-detail-result" class="result" style="display:none;"></div>
+            <div id="bom-detail-logs" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">3. Test BOM Create API</div>
+            <button class="test-button" onclick="testBomCreate()">Test Create BOM</button>
+            <div id="bom-create-result" class="result" style="display:none;"></div>
+            <div id="bom-create-logs" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">📊 Expected API Structure</div>
+            <pre>{
+  "items": [
+    {
+      "id": "1",
+      "code": "BOM-TS-001", 
+      "name": "BOM Áo thun cổ tròn",
+      "productStyleId": "TS001",
+      "isActive": true,
+      "lines": [...],
+      "createdAt": "2024-01-15T10:00:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "total": 3
+}</pre>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🚀 Quick Actions</div>
+            <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+            <button class="test-button" onclick="openBomList()">Open BOM List Page</button>
+        </div>
+    </div>
+
+    <script>
+        // Base API URL - thay đổi theo backend của bạn
+        const API_BASE = 'http://localhost:3000/api'; // Thay đổi URL này
+
+        function log(containerId, message, type = 'info') {
+            const logs = document.getElementById(containerId);
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> ${message}`;
+            
+            if (type === 'error') {
+                logEntry.style.color = '#ff4d4f';
+            } else if (type === 'success') {
+                logEntry.style.color = '#52c41a';
+            } else if (type === 'loading') {
+                logEntry.style.color = '#1890ff';
+            }
+            
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function showResult(containerId, content, isError = false) {
+            const result = document.getElementById(containerId);
+            result.style.display = 'block';
+            result.className = isError ? 'result error' : 'result';
+            result.innerHTML = content;
+        }
+
+        function clearLogs() {
+            document.querySelectorAll('.log').forEach(log => log.innerHTML = '');
+            document.querySelectorAll('.result').forEach(result => result.style.display = 'none');
+        }
+
+        async function testBomList() {
+            const logsId = 'bom-list-logs';
+            const resultId = 'bom-list-result';
+            
+            log(logsId, '🚀 Starting BOM List API test...', 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/boms?page=1&pageSize=20`);
+                log(logsId, `📡 Response status: ${response.status}`);
+                log(logsId, `📡 Response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(logsId, `✅ Response received: ${JSON.stringify(data, null, 2)}`, 'success');
+                
+                // Kiểm tra cấu trúc dữ liệu
+                if (data.items && Array.isArray(data.items)) {
+                    log(logsId, `✅ Items array found with ${data.items.length} items`, 'success');
+                    log(logsId, `📊 Pagination: page ${data.page}, size ${data.pageSize}, total ${data.total}`);
+                    
+                    // Hiển thị items
+                    const itemsHtml = data.items.map(item => `
+                        <div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <strong>${item.code || 'N/A'}</strong> - ${item.name}<br>
+                            <small>ID: ${item.id} | Status: ${item.isActive ? 'Active' : 'Inactive'} | Lines: ${item.lines?.length || 0}</small>
+                        </div>
+                    `).join('');
+                    
+                    showResult(resultId, `
+                        <h4>✅ BOM List API Success</h4>
+                        <p><strong>Total:</strong> ${data.total} BOMs</p>
+                        <p><strong>Page:</strong> ${data.page} / ${Math.ceil(data.total / data.pageSize)}</p>
+                        <div><strong>Items:</strong>${itemsHtml}</div>
+                    `);
+                } else {
+                    log(logsId, '❌ Invalid response structure - missing items array', 'error');
+                    showResult(resultId, '<h4>❌ Invalid Response Structure</h4><p>Response missing items array</p>', true);
+                }
+                
+            } catch (error) {
+                log(logsId, `❌ Error: ${error.message}`, 'error');
+                showResult(resultId, `<h4>❌ API Error</h4><p>${error.message}</p>`, true);
+            }
+        }
+
+        async function testBomDetail() {
+            const bomId = document.getElementById('bom-id').value.trim();
+            if (!bomId) {
+                alert('Vui lòng nhập BOM ID');
+                return;
+            }
+            
+            const logsId = 'bom-detail-logs';
+            const resultId = 'bom-detail-result';
+            
+            log(logsId, `🚀 Starting BOM Detail API test for ID: ${bomId}...`, 'loading');
+            
+            try {
+                const response = await fetch(`${API_BASE}/boms/${bomId}`);
+                log(logsId, `📡 Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(logsId, `✅ Response received: ${JSON.stringify(data, null, 2)}`, 'success');
+                
+                showResult(resultId, `
+                    <h4>✅ BOM Detail API Success</h4>
+                    <p><strong>ID:</strong> ${data.id}</p>
+                    <p><strong>Code:</strong> ${data.code || 'N/A'}</p>
+                    <p><strong>Name:</strong> ${data.name}</p>
+                    <p><strong>Status:</strong> ${data.isActive ? 'Active' : 'Inactive'}</p>
+                    <p><strong>Lines:</strong> ${data.lines?.length || 0} items</p>
+                    <details><summary>Full Data</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>
+                `);
+                
+            } catch (error) {
+                log(logsId, `❌ Error: ${error.message}`, 'error');
+                showResult(resultId, `<h4>❌ API Error</h4><p>${error.message}</p>`, true);
+            }
+        }
+
+        async function testBomCreate() {
+            const logsId = 'bom-create-logs';
+            const resultId = 'bom-create-result';
+            
+            log(logsId, '🚀 Starting BOM Create API test...', 'loading');
+            
+            const testBom = {
+                code: `BOM-TEST-${Date.now()}`,
+                name: 'Test BOM',
+                productStyleId: 'TEST001',
+                isActive: true,
+                lines: [
+                    {
+                        itemId: 'FAB001',
+                        uom: 'm',
+                        qtyPerUnit: '1.5',
+                        wastagePercent: '5',
+                        note: 'Test fabric'
+                    }
+                ]
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/boms`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testBom)
+                });
+                
+                log(logsId, `📡 Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(logsId, `✅ Response received: ${JSON.stringify(data, null, 2)}`, 'success');
+                
+                showResult(resultId, `
+                    <h4>✅ BOM Create API Success</h4>
+                    <p><strong>New BOM ID:</strong> ${data.id}</p>
+                    <p><strong>Code:</strong> ${data.code}</p>
+                    <details><summary>Full Response</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>
+                `);
+                
+            } catch (error) {
+                log(logsId, `❌ Error: ${error.message}`, 'error');
+                showResult(resultId, `<h4>❌ API Error</h4><p>${error.message}</p>`, true);
+            }
+        }
+
+        function openBomList() {
+            window.open('http://localhost:5174/boms', '_blank');
+        }
+
+        async function runAllTests() {
+            clearLogs();
+            await testBomList();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay 1s
+            await testBomDetail();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Delay 1s
+            await testBomCreate();
+        }
+
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('bom-list-logs', '🔄 Page loaded. Ready for testing...');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

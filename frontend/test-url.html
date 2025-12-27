@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test BOM URLs</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .url-list { list-style: none; padding: 0; }
+        .url-item { 
+            margin: 10px 0; 
+            padding: 10px; 
+            background: #f0f0f0; 
+            border-radius: 5px;
+        }
+        .url-link { 
+            color: #1890ff; 
+            text-decoration: none; 
+            font-weight: bold;
+        }
+        .url-link:hover { text-decoration: underline; }
+        .description { color: #666; font-size: 14px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔗 Test BOM URLs</h1>
+    <p>Click vào các link để test BOM functionality:</p>
+    
+    <ul class="url-list">
+        <li class="url-item">
+            <a href="http://localhost:5174/boms" class="url-link" target="_blank">
+                BOM List (Danh sách BOM)
+            </a>
+            <div class="description">Trang chính để xem danh sách BOM - cần test để xem dữ liệu có hiển thị không</div>
+        </li>
+        
+        <li class="url-item">
+            <a href="http://localhost:5174/boms/create" class="url-link" target="_blank">
+                Create BOM (Tạo BOM mới)
+            </a>
+            <div class="description">Trang tạo BOM mới</div>
+        </li>
+        
+        <li class="url-item">
+            <a href="http://localhost:5174/boms/1" class="url-link" target="_blank">
+                BOM Detail (Chi tiết BOM ID=1)
+            </a>
+            <div class="description">Trang xem chi tiết BOM (cần test xem có BOM với ID=1 không)</div>
+        </li>
+        
+        <li class="url-item">
+            <a href="http://localhost:5174/boms/templates" class="url-link" target="_blank">
+                BOM Templates
+            </a>
+            <div class="description">Trang quản lý BOM templates</div>
+        </li>
+    </ul>
+
+    <h2>📋 Testing Checklist</h2>
+    <ul>
+        <li>✅ BOM List hiển thị "Đang tải..." khi đang fetch data</li>
+        <li>✅ Console logs hiển thị response từ API</li>
+        <li>✅ Dữ liệu BOM được render trong table</li>
+        <li>✅ Pagination hoạt động đúng</li>
+        <li>✅ Search và filter có thể thao tác</li>
+    </ul>
+
+    <h2>🛠️ Debug Instructions</h2>
+    <ol>
+        <li>Mở Developer Tools (F12)</li>
+        <li>Chuyển đến Console tab</li>
+        <li>Click vào "BOM List" link ở trên</li>
+        <li>Kiểm tra console logs có hiển thị:
+            <ul>
+                <li><code>🔥 COMPONENT - BomList render with bomResponse: [object]</code></li>
+                <li><code>🔥 COMPONENT - BomList isLoading: [boolean]</code></li>
+                <li><code>🔥 COMPONENT - BomList error: [error hoặc null]</code></li>
+            </ul>
+        </li>
+        <li>Nếu không có logs, có thể component chưa được render hoặc có lỗi JavaScript</li>
+    </ol>
+</body>
+</html>

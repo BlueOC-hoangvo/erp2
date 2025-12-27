@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   Table, 
@@ -11,72 +11,136 @@ import {
   Progress, 
   Tooltip,
   Select,
-  DatePicker,
   Input,
+  message,
 } from 'antd';
 import { 
   PlusOutlined, 
   EyeOutlined, 
-  EditOutlined, 
   DeleteOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
-
   TeamOutlined,
-  TrophyOutlined
+  TrophyOutlined,
+  PlayCircleOutlined,
+  StopOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import type { ProductionOrderEntity } from '../types';
+import type { ProductionOrderEntity, ProductionOrderQuery } from '../types';
 import { 
-  listProductionOrders, 
-  getProductionOrderStats,
-  deleteProductionOrder
-} from '../fake/production-orders.store';
-import { PRODUCTION_ORDER_STATUSES, PRIORITY_LEVELS } from '../types';
+  getProductionOrders,
+  deleteProductionOrder as deleteProductionOrderApi,
+  releaseProductionOrder,
+  startProductionOrder,
+  completeProductionOrder,
+  cancelProductionOrder
+} from '../api/production-orders.api';
+import { PRODUCTION_ORDER_STATUSES } from '../types';
 
 const { Option } = Select;
-const { RangePicker } = DatePicker;
 const { Search } = Input;
 
 const ProductionOrdersList: React.FC = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<ProductionOrderEntity[]>([]);
-  const [stats, setStats] = useState<any>({});
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const [query, setQuery] = useState<ProductionOrderQuery>({
+    page: 1,
+    pageSize: 10,
+  });
   const [filters, setFilters] = useState({
-    status: '',
-    priority: '',
-    dateRange: null as any,
-    search: ''
+    status: '' as '' | "DRAFT" | "RELEASED" | "RUNNING" | "DONE" | "CANCELLED" | undefined,
+    q: '',
   });
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const ordersData = listProductionOrders();
-      const statsData = getProductionOrderStats();
-      setOrders(ordersData);
-      setStats(statsData);
-    } catch (error) {
-      console.error('Error loading production orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Load production orders
+  const { data, isLoading } = useQuery({
+    queryKey: ['production-orders', query],
+    queryFn: () => getProductionOrders(query),
+  });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Mutations for actions
+  const deleteMutation = useMutation({
+    mutationFn: deleteProductionOrderApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      message.success('Xóa lệnh sản xuất thành công');
+    },
+    onError: () => {
+      message.error('Có lỗi khi xóa lệnh sản xuất');
+    },
+  });
 
-  const handleDelete = (id: string) => {
-    deleteProductionOrder(id);
-    loadData();
+  const releaseMutation = useMutation({
+    mutationFn: releaseProductionOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      message.success('Phát hành lệnh sản xuất thành công');
+    },
+    onError: () => {
+      message.error('Có lỗi khi phát hành lệnh sản xuất');
+    },
+  });
+
+  const startMutation = useMutation({
+    mutationFn: startProductionOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      message.success('Bắt đầu sản xuất thành công');
+    },
+    onError: () => {
+      message.error('Có lỗi khi bắt đầu sản xuất');
+    },
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: completeProductionOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      message.success('Hoàn thành lệnh sản xuất thành công');
+    },
+    onError: () => {
+      message.error('Có lỗi khi hoàn thành lệnh sản xuất');
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelProductionOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      message.success('Hủy lệnh sản xuất thành công');
+    },
+    onError: () => {
+      message.error('Có lỗi khi hủy lệnh sản xuất');
+    },
+  });
+
+  const handleDelete = (id: number) => {
+    deleteMutation.mutate(id);
   };
 
   const handleViewDetail = (order: ProductionOrderEntity) => {
     navigate(`/production/orders/${order.id}`);
+  };
+
+  const handleStatusAction = (order: ProductionOrderEntity, action: string) => {
+    const id = order.id;
+    switch (action) {
+      case 'release':
+        releaseMutation.mutate(id);
+        break;
+      case 'start':
+        startMutation.mutate(id);
+        break;
+      case 'done':
+        completeMutation.mutate(id);
+        break;
+      case 'cancel':
+        cancelMutation.mutate(id);
+        break;
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -84,65 +148,71 @@ const ProductionOrdersList: React.FC = () => {
     return statusConfig?.color || 'default';
   };
 
-  const getPriorityColor = (priority: string) => {
-    const priorityConfig = PRIORITY_LEVELS.find(p => p.key === priority);
-    return priorityConfig?.color || 'default';
+  const getStatusLabel = (status: string) => {
+    const statusConfig = PRODUCTION_ORDER_STATUSES.find(s => s.key === status);
+    return statusConfig?.label || status;
   };
 
   const getCompletionRate = (order: ProductionOrderEntity) => {
-    return order.totalQuantity > 0 
-      ? Math.round((order.completedQuantity / order.totalQuantity) * 100)
+    return order.qtyPlan > 0 
+      ? Math.round((Number(order.qtyCompleted) / Number(order.qtyPlan)) * 100)
       : 0;
   };
 
-  const filteredOrders = orders.filter(order => {
-    if (filters.status && order.status !== filters.status) return false;
-    if (filters.priority && order.priority !== filters.priority) return false;
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      return (
-        order.orderNo.toLowerCase().includes(searchLower) ||
-        order.productName.toLowerCase().includes(searchLower) ||
-        order.customerName?.toLowerCase().includes(searchLower)
-      );
+  const getAvailableActions = (order: ProductionOrderEntity) => {
+    const actions = [];
+    switch (order.status) {
+      case 'DRAFT':
+        actions.push({ key: 'release', icon: <PlayCircleOutlined />, label: 'Phát hành' });
+        actions.push({ key: 'cancel', icon: <StopOutlined />, label: 'Hủy' });
+        break;
+      case 'RELEASED':
+        actions.push({ key: 'start', icon: <PlayCircleOutlined />, label: 'Bắt đầu' });
+        actions.push({ key: 'cancel', icon: <StopOutlined />, label: 'Hủy' });
+        break;
+      case 'RUNNING':
+        actions.push({ key: 'done', icon: <CheckCircleOutlined />, label: 'Hoàn thành' });
+        break;
     }
-    return true;
-  });
+    return actions;
+  };
+
+  const orders = data?.data?.items || [];
+  const stats = {
+    totalOrders: data?.data?.total || 0,
+    inProgressOrders: orders.filter((o: ProductionOrderEntity) => o.status === 'RUNNING').length,
+    completedOrders: orders.filter((o: ProductionOrderEntity) => o.status === 'DONE').length,
+    completionRate: orders.length > 0 
+      ? Math.round((orders.filter((o: ProductionOrderEntity) => o.status === 'DONE').length / orders.length) * 100)
+      : 0,
+  };
 
   const columns: ColumnsType<ProductionOrderEntity> = [
     {
       title: 'Mã lệnh',
-      dataIndex: 'orderNo',
-      key: 'orderNo',
+      dataIndex: 'moNo',
+      key: 'moNo',
       width: 120,
       render: (text: string) => <strong>{text}</strong>
     },
     {
       title: 'Sản phẩm',
-      dataIndex: 'productName',
-      key: 'productName',
+      key: 'product',
       ellipsis: true,
-      render: (text: string, record: ProductionOrderEntity) => (
+      render: (_, record: ProductionOrderEntity) => (
         <div>
-          <div className="font-medium">{text}</div>
-          <div className="text-xs text-gray-500">{record.productStyleCode}</div>
+          <div className="font-medium">{record.productStyle?.name || 'N/A'}</div>
+          <div className="text-xs text-gray-500">{record.productStyle?.code || 'N/A'}</div>
         </div>
       )
     },
     {
-      title: 'Khách hàng',
-      dataIndex: 'customerName',
-      key: 'customerName',
-      width: 150,
-      ellipsis: true
-    },
-    {
       title: 'Số lượng',
       key: 'quantity',
-      width: 120,
+      width: 140,
       render: (_, record: ProductionOrderEntity) => (
         <div className="text-center">
-          <div className="font-medium">{record.completedQuantity}/{record.totalQuantity}</div>
+          <div className="font-medium">{Number(record.qtyCompleted)}/{Number(record.qtyPlan)}</div>
           <Progress 
             percent={getCompletionRate(record)} 
             size="small" 
@@ -157,50 +227,37 @@ const ProductionOrdersList: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status: string) => {
-        const statusConfig = PRODUCTION_ORDER_STATUSES.find(s => s.key === status);
-        return (
-          <Tag color={getStatusColor(status)}>
-            {statusConfig?.label || status}
-          </Tag>
-        );
-      }
-    },
-    {
-      title: 'Ưu tiên',
-      dataIndex: 'priority',
-      key: 'priority',
-      width: 100,
-      render: (priority: string) => {
-        const priorityConfig = PRIORITY_LEVELS.find(p => p.key === priority);
-        return (
-          <Tag color={getPriorityColor(priority)}>
-            {priorityConfig?.label || priority}
-          </Tag>
-        );
-      }
-    },
-    {
-      title: 'Đội sản xuất',
-      dataIndex: 'assignedTeam',
-      key: 'assignedTeam',
-      width: 120
-    },
-    {
-      title: 'Thời gian',
-      key: 'time',
-      width: 150,
-      render: (_, record: ProductionOrderEntity) => (
-        <div className="text-xs">
-          <div>BĐ: {new Date(record.startDate).toLocaleDateString('vi-VN')}</div>
-          <div>KT: {new Date(record.endDate).toLocaleDateString('vi-VN')}</div>
-        </div>
+      render: (status: string) => (
+        <Tag color={getStatusColor(status)}>
+          {getStatusLabel(status)}
+        </Tag>
       )
+    },
+    {
+      title: 'Ngày bắt đầu',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      width: 120,
+      render: (date: string) => date ? new Date(date).toLocaleDateString('vi-VN') : '-'
+    },
+    {
+      title: 'Ngày kết thúc',
+      dataIndex: 'dueDate',
+      key: 'dueDate',
+      width: 120,
+      render: (date: string) => date ? new Date(date).toLocaleDateString('vi-VN') : '-'
+    },
+    {
+      title: 'Ghi chú',
+      dataIndex: 'note',
+      key: 'note',
+      ellipsis: true,
+      render: (note: string) => note || '-'
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
+      width: 200,
       render: (_, record: ProductionOrderEntity) => (
         <Space>
           <Tooltip title="Xem chi tiết">
@@ -210,21 +267,56 @@ const ProductionOrdersList: React.FC = () => {
               onClick={() => handleViewDetail(record)}
             />
           </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button type="link" icon={<EditOutlined />} />
-          </Tooltip>
+          
+          {/* Status Action Buttons */}
+          {getAvailableActions(record).map(action => (
+            <Tooltip key={action.key} title={action.label}>
+              <Button 
+                type="link" 
+                icon={action.icon}
+                onClick={() => handleStatusAction(record, action.key)}
+                loading={
+                  (action.key === 'release' && releaseMutation.isPending) ||
+                  (action.key === 'start' && startMutation.isPending) ||
+                  (action.key === 'done' && completeMutation.isPending) ||
+                  (action.key === 'cancel' && cancelMutation.isPending)
+                }
+              />
+            </Tooltip>
+          ))}
+          
           <Tooltip title="Xóa">
             <Button 
               type="link" 
               danger 
               icon={<DeleteOutlined />} 
               onClick={() => handleDelete(record.id)}
+              loading={deleteMutation.isPending}
+              disabled={record.status !== 'DRAFT'}
             />
           </Tooltip>
         </Space>
       )
     }
   ];
+
+  const handleTableChange = (pagination: any) => {
+    setQuery({
+      ...query,
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    });
+  };
+
+  const handleFilterChange = () => {
+    const newQuery = {
+      ...query,
+      page: 1,
+      status: filters.status || undefined,
+      q: filters.q || undefined,
+    };
+    setQuery(newQuery);
+  };
 
   return (
     <div className="p-6">
@@ -285,8 +377,9 @@ const ProductionOrdersList: React.FC = () => {
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={8} lg={4}>
             <Search
-              placeholder="Tìm kiếm..."
-              onChange={(e) => setFilters({...filters, search: e.target.value})}
+              placeholder="Tìm kiếm theo mã lệnh..."
+              onChange={(e) => setFilters({...filters, q: e.target.value})}
+              onSearch={handleFilterChange}
             />
           </Col>
           <Col xs={24} sm={8} lg={4}>
@@ -295,6 +388,7 @@ const ProductionOrdersList: React.FC = () => {
               allowClear
               style={{ width: '100%' }}
               onChange={(value) => setFilters({...filters, status: value || ''})}
+              onBlur={handleFilterChange}
             >
               {PRODUCTION_ORDER_STATUSES.map(status => (
                 <Option key={status.key} value={status.key}>
@@ -303,28 +397,8 @@ const ProductionOrdersList: React.FC = () => {
               ))}
             </Select>
           </Col>
-          <Col xs={24} sm={8} lg={4}>
-            <Select
-              placeholder="Ưu tiên"
-              allowClear
-              style={{ width: '100%' }}
-              onChange={(value) => setFilters({...filters, priority: value || ''})}
-            >
-              {PRIORITY_LEVELS.map(priority => (
-                <Option key={priority.key} value={priority.key}>
-                  {priority.label}
-                </Option>
-              ))}
-            </Select>
-          </Col>
-          <Col xs={24} sm={24} lg={8}>
-            <RangePicker
-              style={{ width: '100%' }}
-              onChange={(dates) => setFilters({...filters, dateRange: dates})}
-            />
-          </Col>
           <Col xs={24} sm={24} lg={4}>
-            <Button type="primary" icon={<PlusOutlined />} block>
+            <Button type="primary" icon={<PlusOutlined />} block onClick={() => navigate('/production/orders/create')}>
               Tạo lệnh mới
             </Button>
           </Col>
@@ -335,12 +409,14 @@ const ProductionOrdersList: React.FC = () => {
       <Card>
         <Table
           columns={columns}
-          dataSource={filteredOrders}
+          dataSource={orders}
           rowKey="id"
-          loading={loading}
+          loading={isLoading}
+          onChange={handleTableChange}
           pagination={{
-            total: filteredOrders.length,
-            pageSize: 10,
+            current: query.page,
+            pageSize: query.pageSize,
+            total: data?.data?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => 

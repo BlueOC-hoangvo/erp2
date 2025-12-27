@@ -21,12 +21,10 @@ export default function Suppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // modal
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ModalMode>("view");
   const [selected, setSelected] = useState<Supplier | null>(null);
 
-  // form add/edit
   const [form, setForm] = useState<SupplierUpsertBody>({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -89,8 +87,8 @@ export default function Suppliers() {
     mode === "add"
       ? "Thêm nhà cung cấp"
       : mode === "edit"
-      ? "Sửa nhà cung cấp"
-      : "Chi tiết nhà cung cấp";
+        ? "Sửa nhà cung cấp"
+        : "Chi tiết nhà cung cấp";
 
   const canSave = useMemo(() => {
     return form.code.trim() !== "" && form.name.trim() !== "";
@@ -98,9 +96,9 @@ export default function Suppliers() {
 
   const setField =
     (key: keyof SupplierUpsertBody) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setForm((p) => ({ ...p, [key]: e.target.value }));
-    };
+      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setForm((p) => ({ ...p, [key]: e.target.value }));
+      };
 
   const cleanBody = (body: SupplierUpsertBody): SupplierUpsertBody => {
     const toUndef = (v?: string) => (v && v.trim() !== "" ? v : undefined);
@@ -238,9 +236,8 @@ export default function Suppliers() {
 
             {mode !== "view" && (
               <button
-                className={`rounded px-4 py-2 text-white ${
-                  canSave && !saving ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-300 cursor-not-allowed"
-                }`}
+                className={`rounded px-4 py-2 text-white ${canSave && !saving ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-300 cursor-not-allowed"
+                  }`}
                 onClick={handleSave}
                 disabled={!canSave || saving}
               >
