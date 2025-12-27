@@ -51,6 +51,26 @@ export class ProductionOrdersController {
     try { return ok(res, await ProductionOrdersService.cancel(req.validated!.params.id)); }
     catch (e) { return next(e); }
   }
+
+  // Tạo Production Orders từ Sales Order
+  static async createFromSalesOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      console.log("=== DEBUG: createFromSalesOrder called ===");
+      const salesOrderId: bigint = req.validated!.params.salesOrderId;
+      const userId: bigint | null = req.user?.id ?? null;
+      
+      console.log("Sales Order ID:", salesOrderId.toString());
+      console.log("User ID:", userId?.toString() ?? "null");
+      
+      const result = await ProductionOrdersService.createFromSalesOrder(salesOrderId, userId);
+      console.log("=== DEBUG: createFromSalesOrder success ===", result);
+      
+      return ok(res, result);
+    } catch (e) {
+      console.log("=== DEBUG: createFromSalesOrder error ===", e);
+      return next(e);
+    }
+  }
   
   
 }

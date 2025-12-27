@@ -1,0 +1,209 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>BOM API Test Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
+            .container { max-width: 1200px; margin: 0 auto; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 30px; }
+            .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 30px 0; }
+            .metric { background: white; padding: 25px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .metric h3 { margin: 0; font-size: 2.5em; }
+            .metric p { margin: 10px 0 0 0; color: #666; font-weight: 500; }
+            .passed { color: #28a745; }
+            .failed { color: #dc3545; }
+            .phase { margin: 30px 0; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .phase-header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; }
+            .phase-header h2 { margin: 0; }
+            .phase-stats { opacity: 0.9; margin-top: 5px; }
+            .test { padding: 15px 20px; background: white; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+            .test:last-child { border-bottom: none; }
+            .test-name { font-weight: 500; }
+            .test-status { font-weight: bold; }
+            .error { background: #f8d7da; color: #721c24; padding: 15px; margin: 10px 20px; border-radius: 5px; border-left: 4px solid #dc3545; }
+            .footer { text-align: center; margin-top: 40px; padding: 20px; background: white; border-radius: 10px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🔧 BOM API Test Report</h1>
+                <p>Generated: 12/27/2025, 5:20:27 AM</p>
+                <p>Comprehensive testing of BOM system APIs</p>
+            </div>
+            
+            <div class="summary">
+                <div class="metric">
+                    <h3>18</h3>
+                    <p>Total Tests</p>
+                </div>
+                <div class="metric">
+                    <h3 class="passed">11</h3>
+                    <p>Passed</p>
+                </div>
+                <div class="metric">
+                    <h3 class="failed">7</h3>
+                    <p>Failed</p>
+                </div>
+                <div class="metric">
+                    <h3>61.1%</h3>
+                    <p>Success Rate</p>
+                </div>
+            </div>
+    
+        <div class="phase">
+            <div class="phase-header">
+                <h2>Phase 1: Basic CRUD Operations</h2>
+                <div class="phase-stats">
+                    ✅ Passed: 3 | ❌ Failed: 0 | Success: 100.0%
+                </div>
+            </div>
+      
+          <div class="test">
+            <div class="test-name">GET /boms - List all BOMs</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        
+          <div class="test">
+            <div class="test-name">GET /boms - List BOMs with search</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        
+          <div class="test">
+            <div class="test-name">GET /boms/1 - Get specific BOM</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        </div>
+        <div class="phase">
+            <div class="phase-header">
+                <h2>Phase 2: Enhanced BOM Features</h2>
+                <div class="phase-stats">
+                    ✅ Passed: 4 | ❌ Failed: 0 | Success: 100.0%
+                </div>
+            </div>
+      
+          <div class="test">
+            <div class="test-name">GET /boms/1/explode - BOM Explosion (100 units)</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        
+          <div class="test">
+            <div class="test-name">GET /boms/1/explode - BOM Explosion (1 unit)</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        
+          <div class="test">
+            <div class="test-name">GET /boms/1/cost - BOM Cost Calculation</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        
+          <div class="test">
+            <div class="test-name">GET /boms/1/lead-time - BOM Lead Time</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        </div>
+        <div class="phase">
+            <div class="phase-header">
+                <h2>Phase 3: BOM Versioning System</h2>
+                <div class="phase-stats">
+                    ✅ Passed: 1 | ❌ Failed: 3 | Success: 25.0%
+                </div>
+            </div>
+      
+          <div class="test">
+            <div class="test-name">GET /boms/1/current-version - Get Current Version</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        
+          <div class="test">
+            <div class="test-name">POST /boms/1/versions - Create New Version</div>
+            <div class="test-status failed">❌ FAILED</div>
+            <div class="error">Error: Expected status 200, got 401</div>
+          </div>
+        
+          <div class="test">
+            <div class="test-name">POST /versions/1/submit-approval - Submit for Approval</div>
+            <div class="test-status failed">❌ FAILED</div>
+            <div class="error">Error: Expected status 200, got 404</div>
+          </div>
+        
+          <div class="test">
+            <div class="test-name">POST /versions/1/approve - Approve Version</div>
+            <div class="test-status failed">❌ FAILED</div>
+            <div class="error">Error: Expected status 200, got 404</div>
+          </div>
+        </div>
+        <div class="phase">
+            <div class="phase-header">
+                <h2>Phase 4: BOM Templates</h2>
+                <div class="phase-stats">
+                    ✅ Passed: 0 | ❌ Failed: 4 | Success: 0.0%
+                </div>
+            </div>
+      
+          <div class="test">
+            <div class="test-name">GET /boms/templates - List Templates</div>
+            <div class="test-status failed">❌ FAILED</div>
+            <div class="error">Error: Expected status 200, got 400</div>
+          </div>
+        
+          <div class="test">
+            <div class="test-name">POST /boms/templates - Create Template</div>
+            <div class="test-status failed">❌ FAILED</div>
+            <div class="error">Error: Expected status 200, got 401</div>
+          </div>
+        
+          <div class="test">
+            <div class="test-name">GET /boms/templates/1 - Get Template</div>
+            <div class="test-status failed">❌ FAILED</div>
+            <div class="error">Error: Expected status 200, got 400</div>
+          </div>
+        
+          <div class="test">
+            <div class="test-name">POST /templates/1/create-bom - Create BOM from Template</div>
+            <div class="test-status failed">❌ FAILED</div>
+            <div class="error">Error: Expected status 200, got 404</div>
+          </div>
+        </div>
+        <div class="phase">
+            <div class="phase-header">
+                <h2>Phase 5: Error Handling & Edge Cases</h2>
+                <div class="phase-stats">
+                    ✅ Passed: 3 | ❌ Failed: 0 | Success: 100.0%
+                </div>
+            </div>
+      
+          <div class="test">
+            <div class="test-name">GET /boms/99999 - Invalid BOM ID</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        
+          <div class="test">
+            <div class="test-name">GET /boms - Invalid page size</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        
+          <div class="test">
+            <div class="test-name">GET /boms/1/explode - Invalid quantity</div>
+            <div class="test-status passed">✅ PASSED</div>
+            
+          </div>
+        </div>
+            <div class="footer">
+                <p>🎯 Test completed successfully! Review results above for detailed analysis.</p>
+                <p>💡 Check individual test results to identify any issues that need attention.</p>
+            </div>
+        </div>
+    </body>
+    </html>

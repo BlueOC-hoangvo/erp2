@@ -1,0 +1,428 @@
+{
+  "timestamp": "2025-12-27T00-27-38-683Z",
+  "summary": {
+    "total": 8,
+    "passed": 7,
+    "failed": 1,
+    "successRate": "87.5"
+  },
+  "details": [
+    {
+      "testName": "GET /boms - List BOMs",
+      "status": "PASSED",
+      "response": {
+        "data": {
+          "page": 1,
+          "pageSize": 10,
+          "total": 4,
+          "items": [
+            {
+              "id": "36",
+              "code": "BOM-2",
+              "productStyleId": "1",
+              "name": "Bomtest",
+              "isActive": true,
+              "createdAt": "2025-12-26T20:07:00.124Z",
+              "updatedAt": "2025-12-26T20:07:00.124Z",
+              "note": null,
+              "productStyle": {
+                "id": "1",
+                "code": "TS-002",
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:04.880Z",
+                "updatedAt": "2025-12-24T17:31:04.880Z"
+              }
+            },
+            {
+              "id": "35",
+              "code": "BOM-1",
+              "productStyleId": "1",
+              "name": "Bomtest",
+              "isActive": true,
+              "createdAt": "2025-12-26T20:06:28.109Z",
+              "updatedAt": "2025-12-26T20:06:28.109Z",
+              "note": null,
+              "productStyle": {
+                "id": "1",
+                "code": "TS-002",
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:04.880Z",
+                "updatedAt": "2025-12-24T17:31:04.880Z"
+              }
+            },
+            {
+              "id": "3",
+              "code": "BOM-SH001-001",
+              "productStyleId": "3",
+              "name": "Basic Shirt BOM v1.0",
+              "isActive": true,
+              "createdAt": "2025-12-26T18:27:24.522Z",
+              "updatedAt": "2025-12-26T18:27:24.522Z",
+              "note": null,
+              "productStyle": {
+                "id": "3",
+                "code": "SH001",
+                "name": "Basic Cotton Shirt",
+                "note": "Standard cotton shirt for men",
+                "isActive": true,
+                "createdAt": "2025-12-26T18:27:24.515Z",
+                "updatedAt": "2025-12-26T18:27:24.515Z"
+              }
+            },
+            {
+              "id": "1",
+              "code": "BOM-TS-001",
+              "productStyleId": "2",
+              "name": null,
+              "isActive": true,
+              "createdAt": "2025-12-24T17:33:08.387Z",
+              "updatedAt": "2025-12-24T17:33:08.387Z",
+              "note": null,
+              "productStyle": {
+                "id": "2",
+                "code": null,
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:27.835Z",
+                "updatedAt": "2025-12-24T17:31:27.835Z"
+              }
+            }
+          ]
+        },
+        "meta": null,
+        "error": null
+      }
+    },
+    {
+      "testName": "GET /boms - Search BOMs",
+      "status": "PASSED",
+      "response": {
+        "data": {
+          "page": 1,
+          "pageSize": 5,
+          "total": 2,
+          "items": [
+            {
+              "id": "36",
+              "code": "BOM-2",
+              "productStyleId": "1",
+              "name": "Bomtest",
+              "isActive": true,
+              "createdAt": "2025-12-26T20:07:00.124Z",
+              "updatedAt": "2025-12-26T20:07:00.124Z",
+              "note": null,
+              "productStyle": {
+                "id": "1",
+                "code": "TS-002",
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:04.880Z",
+                "updatedAt": "2025-12-24T17:31:04.880Z"
+              }
+            },
+            {
+              "id": "35",
+              "code": "BOM-1",
+              "productStyleId": "1",
+              "name": "Bomtest",
+              "isActive": true,
+              "createdAt": "2025-12-26T20:06:28.109Z",
+              "updatedAt": "2025-12-26T20:06:28.109Z",
+              "note": null,
+              "productStyle": {
+                "id": "1",
+                "code": "TS-002",
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:04.880Z",
+                "updatedAt": "2025-12-24T17:31:04.880Z"
+              }
+            }
+          ]
+        },
+        "meta": null,
+        "error": null
+      }
+    },
+    {
+      "testName": "GET /boms/templates - List templates",
+      "status": "PASSED",
+      "response": {
+        "data": {
+          "page": 1,
+          "pageSize": 10,
+          "total": 3,
+          "items": [
+            {
+              "id": "3",
+              "name": "Simple Accessory Template",
+              "code": "ACCESSORY-SIMPLE",
+              "description": "Basic accessory BOM",
+              "category": "Accessories",
+              "isActive": true,
+              "templateData": {
+                "lines": [
+                  {
+                    "uom": "pcs",
+                    "note": "Main component",
+                    "itemId": "1",
+                    "isOptional": false,
+                    "qtyPerUnit": "1",
+                    "leadTimeDays": 5,
+                    "wastagePercent": "2"
+                  }
+                ]
+              },
+              "usageCount": "0",
+              "createdAt": "2025-12-26T22:30:53.535Z",
+              "updatedAt": "2025-12-26T22:30:53.535Z"
+            },
+            {
+              "id": "2",
+              "name": "Complex Garment Template",
+              "code": "COMPLEX-GARMENT",
+              "description": "Multi-level BOM with sub-assemblies",
+              "category": "Advanced",
+              "isActive": true,
+              "templateData": {
+                "lines": [
+                  {
+                    "uom": "meter",
+                    "note": "Outer fabric",
+                    "itemId": "1",
+                    "isOptional": false,
+                    "qtyPerUnit": "2.5",
+                    "leadTimeDays": 14,
+                    "wastagePercent": "8"
+                  },
+                  {
+                    "uom": "pcs",
+                    "note": "Zipper",
+                    "itemId": "2",
+                    "isOptional": false,
+                    "qtyPerUnit": "1",
+                    "leadTimeDays": 10,
+                    "wastagePercent": "0"
+                  },
+                  {
+                    "uom": "pcs",
+                    "note": "Elastic bands",
+                    "itemId": "3",
+                    "isOptional": true,
+                    "qtyPerUnit": "2",
+                    "leadTimeDays": 7,
+                    "wastagePercent": "3"
+                  }
+                ]
+              },
+              "usageCount": "0",
+              "createdAt": "2025-12-26T22:30:53.529Z",
+              "updatedAt": "2025-12-26T22:30:53.529Z"
+            },
+            {
+              "id": "1",
+              "name": "Basic T-Shirt BOM Template",
+              "code": "TSHIRT-BASIC",
+              "description": "Standard T-Shirt BOM with fabric and trims",
+              "category": "Apparel",
+              "isActive": true,
+              "templateData": {
+                "lines": [
+                  {
+                    "uom": "meter",
+                    "note": "Main fabric",
+                    "itemId": "1",
+                    "isOptional": false,
+                    "qtyPerUnit": "1.2",
+                    "leadTimeDays": 7,
+                    "wastagePercent": "5"
+                  },
+                  {
+                    "uom": "pcs",
+                    "note": "Buttons",
+                    "itemId": "2",
+                    "isOptional": false,
+                    "qtyPerUnit": "3",
+                    "leadTimeDays": 3,
+                    "wastagePercent": "2"
+                  },
+                  {
+                    "uom": "meter",
+                    "note": "Rib fabric",
+                    "itemId": "3",
+                    "isOptional": true,
+                    "qtyPerUnit": "0.5",
+                    "leadTimeDays": 5,
+                    "wastagePercent": "10"
+                  }
+                ]
+              },
+              "usageCount": "0",
+              "createdAt": "2025-12-26T22:30:53.518Z",
+              "updatedAt": "2025-12-26T22:30:53.518Z"
+            }
+          ]
+        },
+        "meta": null,
+        "error": null
+      }
+    },
+    {
+      "testName": "POST /boms/templates - Create template",
+      "status": "FAILED",
+      "response": {
+        "data": null,
+        "meta": null,
+        "error": {
+          "message": "Unauthorized",
+          "details": null
+        }
+      },
+      "error": "Request failed with status code 401"
+    },
+    {
+      "testName": "GET /boms/99999 - Not found error (404)",
+      "status": "PASSED",
+      "response": {
+        "data": null,
+        "meta": null,
+        "error": {
+          "message": "BOM not found",
+          "details": null
+        }
+      },
+      "error": "Request failed with status code 404"
+    },
+    {
+      "testName": "GET /boms?page=0 - Invalid page error (400)",
+      "status": "PASSED",
+      "response": {
+        "data": null,
+        "meta": null,
+        "error": {
+          "message": "Validation error",
+          "details": {
+            "formErrors": [],
+            "fieldErrors": {
+              "page": [
+                "Too small: expected number to be >=1"
+              ]
+            }
+          }
+        }
+      },
+      "error": "Request failed with status code 400"
+    },
+    {
+      "testName": "POST /boms without auth - Should be 401",
+      "status": "PASSED",
+      "response": {
+        "data": null,
+        "meta": null,
+        "error": {
+          "message": "Unauthorized",
+          "details": null
+        }
+      },
+      "error": "Request failed with status code 401"
+    },
+    {
+      "testName": "GET /boms without auth - Should work for GET",
+      "status": "PASSED",
+      "response": {
+        "data": {
+          "page": 1,
+          "pageSize": 5,
+          "total": 4,
+          "items": [
+            {
+              "id": "36",
+              "code": "BOM-2",
+              "productStyleId": "1",
+              "name": "Bomtest",
+              "isActive": true,
+              "createdAt": "2025-12-26T20:07:00.124Z",
+              "updatedAt": "2025-12-26T20:07:00.124Z",
+              "note": null,
+              "productStyle": {
+                "id": "1",
+                "code": "TS-002",
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:04.880Z",
+                "updatedAt": "2025-12-24T17:31:04.880Z"
+              }
+            },
+            {
+              "id": "35",
+              "code": "BOM-1",
+              "productStyleId": "1",
+              "name": "Bomtest",
+              "isActive": true,
+              "createdAt": "2025-12-26T20:06:28.109Z",
+              "updatedAt": "2025-12-26T20:06:28.109Z",
+              "note": null,
+              "productStyle": {
+                "id": "1",
+                "code": "TS-002",
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:04.880Z",
+                "updatedAt": "2025-12-24T17:31:04.880Z"
+              }
+            },
+            {
+              "id": "3",
+              "code": "BOM-SH001-001",
+              "productStyleId": "3",
+              "name": "Basic Shirt BOM v1.0",
+              "isActive": true,
+              "createdAt": "2025-12-26T18:27:24.522Z",
+              "updatedAt": "2025-12-26T18:27:24.522Z",
+              "note": null,
+              "productStyle": {
+                "id": "3",
+                "code": "SH001",
+                "name": "Basic Cotton Shirt",
+                "note": "Standard cotton shirt for men",
+                "isActive": true,
+                "createdAt": "2025-12-26T18:27:24.515Z",
+                "updatedAt": "2025-12-26T18:27:24.515Z"
+              }
+            },
+            {
+              "id": "1",
+              "code": "BOM-TS-001",
+              "productStyleId": "2",
+              "name": null,
+              "isActive": true,
+              "createdAt": "2025-12-24T17:33:08.387Z",
+              "updatedAt": "2025-12-24T17:33:08.387Z",
+              "note": null,
+              "productStyle": {
+                "id": "2",
+                "code": null,
+                "name": "Áo thun basic",
+                "note": null,
+                "isActive": true,
+                "createdAt": "2025-12-24T17:31:27.835Z",
+                "updatedAt": "2025-12-24T17:31:27.835Z"
+              }
+            }
+          ]
+        },
+        "meta": null,
+        "error": null
+      }
+    }
+  ]
+}

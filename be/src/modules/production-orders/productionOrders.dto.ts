@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { zBigInt } from "../../common/zod";
 
+export { zBigInt };
+
 const zDecStr = z.coerce.string().refine((s) => s.trim() !== "", "Required");
 
 export const generateMaterialsQueryDto = z.object({

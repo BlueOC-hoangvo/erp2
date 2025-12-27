@@ -7,9 +7,593 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//
-// ===================== ENUMS =====================
-//
+model User {
+  id                  BigInt            @id @default(autoincrement())
+  email               String            @unique @db.VarChar(150)
+  passwordHash        String            @db.VarChar(255)
+  fullName            String            @db.VarChar(150)
+  isActive            Boolean           @default(true)
+  lastLoginAt         DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?
+  bomApprovals        BomApproval[]
+  bomVersionsApproved BomVersion[]      @relation("BomVersionApprovedBy")
+  bomVersionsCreated  BomVersion[]      @relation("BomVersionCreatedBy")
+  customerNotes       CustomerNote[]
+  productionOrders    ProductionOrder[] @relation("ProductionOrders_CreatedBy")
+  purchaseOrders      PurchaseOrder[]   @relation("PurchaseOrders_CreatedBy")
+  refreshTokens       RefreshToken[]
+  roles               UserRole[]
+  salesOrders         SalesOrder[]
+  stockMoves          StockMove[]       @relation("StockMoves_CreatedBy")
+
+  @@map("users")
+}
+
+model Role {
+  id          BigInt           @id @default(autoincrement())
+  code        String           @unique @db.VarChar(50)
+  name        String           @db.VarChar(150)
+  description String?          @db.VarChar(255)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id        BigInt           @id @default(autoincrement())
+  code      String           @unique @db.VarChar(80)
+  name      String           @db.VarChar(150)
+  module    String           @db.VarChar(80)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  roles     RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId BigInt
+  roleId BigInt
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("role_user")
+}
+
+model RolePermission {
+  roleId       BigInt
+  permissionId BigInt
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permission")
+}
+
+model RefreshToken {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt
+  tokenHash String    @unique @db.VarChar(255)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  userAgent String?   @db.VarChar(255)
+  ip        String?   @db.VarChar(64)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Customer {
+  id          BigInt         @id @default(autoincrement())
+  code        String?        @unique @db.VarChar(50)
+  name        String         @db.VarChar(200)
+  taxCode     String?        @db.VarChar(50)
+  phone       String?        @db.VarChar(30)
+  email       String?        @db.VarChar(150)
+  address     String?        @db.VarChar(255)
+  note        String?        @db.Text
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  notes       CustomerNote[]
+  salesOrders SalesOrder[]
+
+  @@index([name])
+  @@index([phone])
+  @@map("customers")
+}
+
+model CustomerNote {
+  id         BigInt   @id @default(autoincrement())
+  customerId BigInt
+  userId     BigInt?
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([customerId])
+  @@index([userId])
+  @@map("customer_notes")
+}
+
+model ProductStyle {
+  id               BigInt            @id @default(autoincrement())
+  code             String?           @unique @db.VarChar(50)
+  name             String            @db.VarChar(200)
+  note             String?           @db.VarChar(255)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  boms             Bom[]
+  variants         ProductVariant[]
+  productionOrders ProductionOrder[]
+  salesOrderItems  SalesOrderItem[]
+
+  @@map("product_style")
+}
+
+model Size {
+  id        BigInt           @id @default(autoincrement())
+  code      String           @unique @db.VarChar(30)
+  name      String?          @db.VarChar(80)
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  variants  ProductVariant[]
+
+  @@map("sizes")
+}
+
+model Color {
+  id        BigInt           @id @default(autoincrement())
+  code      String           @unique @db.VarChar(30)
+  name      String           @db.VarChar(80)
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  variants  ProductVariant[]
+
+  @@map("colors")
+}
+
+model ProductVariant {
+  id             BigInt                     @id @default(autoincrement())
+  sku            String?                    @unique @db.VarChar(60)
+  productStyleId BigInt
+  sizeId         BigInt
+  colorId        BigInt
+  isActive       Boolean                    @default(true)
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  color          Color                      @relation(fields: [colorId], references: [id])
+  productStyle   ProductStyle               @relation(fields: [productStyleId], references: [id])
+  size           Size                       @relation(fields: [sizeId], references: [id])
+  moBreakdowns   ProductionOrderBreakdown[]
+  soBreakdowns   SoItemVariantBreakdown[]
+  stockMoveLines StockMoveLine[]
+
+  @@unique([productStyleId, sizeId, colorId])
+  @@index([productStyleId])
+  @@index([sizeId])
+  @@index([colorId])
+  @@map("product_variant")
+}
+
+model SalesOrder {
+  id          BigInt           @id @default(autoincrement())
+  orderNo     String           @unique @db.VarChar(50)
+  customerId  BigInt
+  createdById BigInt?
+  orderDate   DateTime         @default(now())
+  dueDate     DateTime?
+  status      SalesOrderStatus @default(DRAFT)
+  note        String?          @db.Text
+  isInternal  Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdBy   User?            @relation(fields: [createdById], references: [id])
+  customer    Customer         @relation(fields: [customerId], references: [id])
+  items       SalesOrderItem[]
+  stockMoves  StockMove[]      @relation("StockMove_SalesOrder")
+
+  @@index([customerId])
+  @@index([createdById])
+  @@index([status, orderDate])
+  @@index([customerId, orderDate])
+  @@map("sale_orders")
+}
+
+model SalesOrderItem {
+  id               BigInt                   @id @default(autoincrement())
+  salesOrderId     BigInt
+  lineNo           Int
+  productStyleId   BigInt
+  itemName         String                   @db.VarChar(200)
+  uom              String                   @default("pcs") @db.VarChar(20)
+  qtyTotal         Decimal                  @db.Decimal(18, 3)
+  unitPrice        Decimal                  @db.Decimal(18, 2)
+  amount           Decimal                  @db.Decimal(18, 2)
+  note             String?                  @db.Text
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  productionOrders ProductionOrder[]
+  productStyle     ProductStyle             @relation(fields: [productStyleId], references: [id])
+  salesOrder       SalesOrder               @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  breakdowns       SoItemVariantBreakdown[]
+
+  @@unique([salesOrderId, lineNo])
+  @@index([productStyleId])
+  @@index([salesOrderId])
+  @@map("sale_orders_item")
+}
+
+model SoItemVariantBreakdown {
+  id               BigInt         @id @default(autoincrement())
+  salesOrderItemId BigInt
+  productVariantId BigInt
+  qty              Decimal        @db.Decimal(18, 3)
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+  salesOrderItem   SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
+
+  @@unique([salesOrderItemId, productVariantId])
+  @@index([productVariantId])
+  @@map("so_item_variant_breakdowns")
+}
+
+model ProductionOrder {
+  id                   BigInt                     @id @default(autoincrement())
+  moNo                 String                     @unique @db.VarChar(50)
+  salesOrderItemId     BigInt?
+  productStyleId       BigInt
+  createdById          BigInt?
+  qtyPlan              Decimal                    @db.Decimal(18, 3)
+  qtyDone              Decimal                    @default(0.000) @db.Decimal(18, 3)
+  startDate            DateTime?
+  dueDate              DateTime?
+  status               ProductionOrderStatus      @default(DRAFT)
+  note                 String?                    @db.Text
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  materialRequirements MoMaterialRequirement[]
+  createdBy            User?                      @relation("ProductionOrders_CreatedBy", fields: [createdById], references: [id])
+  productStyle         ProductStyle               @relation(fields: [productStyleId], references: [id])
+  salesOrderItem       SalesOrderItem?            @relation(fields: [salesOrderItemId], references: [id])
+  breakdowns           ProductionOrderBreakdown[]
+  stockMoves           StockMove[]                @relation("StockMove_ProductionOrder")
+
+  @@index([salesOrderItemId])
+  @@index([productStyleId])
+  @@index([createdById])
+  @@index([status])
+  @@index([status, dueDate])
+  @@map("production_order")
+}
+
+model ProductionOrderBreakdown {
+  id                BigInt          @id @default(autoincrement())
+  productionOrderId BigInt
+  productVariantId  BigInt
+  qtyPlan           Decimal         @db.Decimal(18, 3)
+  qtyDone           Decimal         @default(0.000) @db.Decimal(18, 3)
+  productVariant    ProductVariant  @relation(fields: [productVariantId], references: [id])
+  productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([productionOrderId, productVariantId])
+  @@index([productVariantId])
+  @@map("production_order_breakdowns")
+}
+
+model Item {
+  id             BigInt                  @id @default(autoincrement())
+  sku            String?                 @unique @db.VarChar(60)
+  name           String                  @db.VarChar(200)
+  itemType       ItemType
+  baseUom        String                  @default("pcs") @db.VarChar(20)
+  isActive       Boolean                 @default(true)
+  note           String?                 @db.Text
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  bomLines       BomLine[]
+  moRequirements MoMaterialRequirement[]
+  purchaseLines  PurchaseOrderLine[]
+  stockMoveLines StockMoveLine[]
+
+  @@index([itemType])
+  @@map("items")
+}
+
+model Bom {
+  id             BigInt       @id @default(autoincrement())
+  code           String?      @unique @db.VarChar(50)
+  productStyleId BigInt
+  name           String?      @db.VarChar(200)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  note           String?      @db.Text
+  lines          BomLine[]
+  subBomLines    BomLine[]    @relation("BomLineSubBom")
+  versions       BomVersion[]
+  productStyle   ProductStyle @relation(fields: [productStyleId], references: [id], onDelete: Cascade)
+
+  @@index([productStyleId])
+  @@map("boms")
+}
+
+model BomLine {
+  id             BigInt    @id @default(autoincrement())
+  bomId          BigInt
+  itemId         BigInt
+  uom            String    @default("pcs") @db.VarChar(20)
+  qtyPerUnit     Decimal   @db.Decimal(18, 6)
+  wastagePercent Decimal   @default(0.00) @db.Decimal(8, 2)
+  lineNo         Int       @default(0)
+  note           String?   @db.Text
+  isOptional     Boolean   @default(false)
+  leadTimeDays   Int?      @default(0)
+  subBomId       BigInt?
+  parentLineId   BigInt?
+  bom            Bom       @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  item           Item      @relation(fields: [itemId], references: [id])
+  parentLine     BomLine?  @relation("BomLineHierarchy", fields: [parentLineId], references: [id], onUpdate: NoAction)
+  childLines     BomLine[] @relation("BomLineHierarchy")
+  subBom         Bom?      @relation("BomLineSubBom", fields: [subBomId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@unique([bomId, itemId])
+  @@index([itemId])
+  @@index([parentLineId], map: "idx_bom_lines_parentLineId")
+  @@index([subBomId], map: "idx_bom_lines_subBomId")
+  @@map("bom_lines")
+}
+
+model BomVersion {
+  id                   BigInt                  @id @default(autoincrement())
+  bomId                BigInt
+  versionNo            String                  @db.VarChar(20)
+  status               BomVersionStatus        @default(DRAFT)
+  description          String?                 @db.Text
+  effectiveFrom        DateTime?
+  effectiveTo          DateTime?
+  parentVersionId      BigInt?
+  isCurrent            Boolean                 @default(false)
+  approvedById         BigInt?
+  approvedAt           DateTime?
+  createdById          BigInt?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @default(now()) @updatedAt
+  approvals            BomApproval[]
+  approvedBy           User?                   @relation("BomVersionApprovedBy", fields: [approvedById], references: [id], onUpdate: NoAction)
+  bom                  Bom                     @relation(fields: [bomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdBy            User?                   @relation("BomVersionCreatedBy", fields: [createdById], references: [id], onUpdate: NoAction)
+  parentVersion        BomVersion?             @relation("BomVersionHistory", fields: [parentVersionId], references: [id], onUpdate: NoAction)
+  childVersions        BomVersion[]            @relation("BomVersionHistory")
+  materialRequirements MoMaterialRequirement[]
+
+  @@unique([bomId, versionNo])
+  @@index([approvedById], map: "bom_versions_approvedById_fkey")
+  @@index([createdById], map: "bom_versions_createdById_fkey")
+  @@index([bomId, isCurrent], map: "idx_bom_versions_bomId_isCurrent")
+  @@index([parentVersionId], map: "idx_bom_versions_parentVersionId")
+  @@index([status], map: "idx_bom_versions_status")
+  @@map("bom_versions")
+}
+
+model BomApproval {
+  id           BigInt            @id @default(autoincrement())
+  bomVersionId BigInt
+  approverId   BigInt
+  status       BomApprovalStatus @default(PENDING)
+  comments     String?           @db.Text
+  approvedAt   DateTime?         @default(now())
+  createdAt    DateTime          @default(now())
+  approver     User              @relation(fields: [approverId], references: [id], onUpdate: NoAction)
+  bomVersion   BomVersion        @relation(fields: [bomVersionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([bomVersionId, approverId])
+  @@index([approverId], map: "bom_approvals_approverId_fkey")
+  @@index([bomVersionId], map: "idx_bom_approvals_bomVersionId")
+  @@index([status], map: "idx_bom_approvals_status")
+  @@map("bom_approvals")
+}
+
+model BomTemplate {
+  id           BigInt   @id @default(autoincrement())
+  name         String   @db.VarChar(200)
+  code         String?  @unique(map: "code") @db.VarChar(50)
+  description  String?  @db.Text
+  category     String?  @db.VarChar(100)
+  isActive     Boolean  @default(true)
+  templateData Json
+  usageCount   BigInt   @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@map("bom_templates")
+}
+
+model MoMaterialRequirement {
+  id                BigInt          @id @default(autoincrement())
+  productionOrderId BigInt
+  itemId            BigInt
+  uom               String          @default("pcs") @db.VarChar(20)
+  qtyRequired       Decimal         @db.Decimal(18, 3)
+  qtyIssued         Decimal         @default(0.000) @db.Decimal(18, 3)
+  wastagePercent    Decimal         @default(0.00) @db.Decimal(8, 2)
+  createdAt         DateTime        @default(now())
+  unitCost          Decimal?        @db.Decimal(18, 4)
+  totalCost         Decimal?        @db.Decimal(18, 2)
+  leadTimeDays      Int?            @default(0)
+  requiredDate      DateTime?
+  bomVersionId      BigInt?
+  bomVersion        BomVersion?     @relation(fields: [bomVersionId], references: [id], onUpdate: NoAction)
+  item              Item            @relation(fields: [itemId], references: [id])
+  productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([productionOrderId, itemId])
+  @@index([itemId])
+  @@index([bomVersionId], map: "idx_mo_material_requirement_bomVersionId")
+  @@index([requiredDate], map: "idx_mo_material_requirement_requiredDate")
+  @@map("mo_material_requirement")
+}
+
+model Supplier {
+  id             BigInt          @id @default(autoincrement())
+  code           String?         @unique @db.VarChar(50)
+  name           String          @db.VarChar(200)
+  taxCode        String?         @db.VarChar(50)
+  phone          String?         @db.VarChar(30)
+  email          String?         @db.VarChar(150)
+  address        String?         @db.VarChar(255)
+  note           String?         @db.Text
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  purchaseOrders PurchaseOrder[]
+
+  @@map("supplier")
+}
+
+model PurchaseOrder {
+  id          BigInt              @id @default(autoincrement())
+  poNo        String              @unique @db.VarChar(50)
+  supplierId  BigInt
+  createdById BigInt?
+  orderDate   DateTime            @default(now())
+  status      PurchaseOrderStatus @default(DRAFT)
+  note        String?             @db.Text
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  createdBy   User?               @relation("PurchaseOrders_CreatedBy", fields: [createdById], references: [id])
+  supplier    Supplier            @relation(fields: [supplierId], references: [id])
+  lines       PurchaseOrderLine[]
+  stockMoves  StockMove[]         @relation("StockMove_PurchaseOrder")
+
+  @@index([supplierId])
+  @@index([createdById])
+  @@index([status, orderDate])
+  @@index([supplierId, orderDate])
+  @@map("purchase_order")
+}
+
+model PurchaseOrderLine {
+  id              BigInt        @id @default(autoincrement())
+  purchaseOrderId BigInt
+  lineNo          Int
+  itemId          BigInt
+  uom             String        @default("pcs") @db.VarChar(20)
+  qty             Decimal       @db.Decimal(18, 3)
+  unitPrice       Decimal       @db.Decimal(18, 2)
+  amount          Decimal       @db.Decimal(18, 2)
+  receivedQty     Decimal       @default(0.000) @db.Decimal(18, 3)
+  item            Item          @relation(fields: [itemId], references: [id])
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([purchaseOrderId, lineNo])
+  @@index([itemId])
+  @@index([purchaseOrderId])
+  @@map("purchase_order_line")
+}
+
+model Warehouse {
+  id         BigInt      @id @default(autoincrement())
+  code       String      @unique @db.VarChar(30)
+  name       String      @db.VarChar(150)
+  note       String?     @db.VarChar(255)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  locations  Location[]
+  stockMoves StockMove[]
+
+  @@map("warehouse")
+}
+
+model Location {
+  id          BigInt          @id @default(autoincrement())
+  warehouseId BigInt
+  code        String          @db.VarChar(50)
+  name        String          @db.VarChar(150)
+  parentId    BigInt?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  parent      Location?       @relation("LocationParent", fields: [parentId], references: [id])
+  children    Location[]      @relation("LocationParent")
+  warehouse   Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  fromLines   StockMoveLine[] @relation("FromLocation")
+  toLines     StockMoveLine[] @relation("ToLocation")
+
+  @@unique([warehouseId, code])
+  @@index([parentId])
+  @@index([warehouseId, parentId])
+  @@map("location")
+}
+
+model StockMove {
+  id                BigInt           @id @default(autoincrement())
+  moveNo            String           @unique @db.VarChar(50)
+  moveType          StockMoveType
+  status            StockMoveStatus  @default(DRAFT)
+  warehouseId       BigInt
+  createdById       BigInt?
+  moveDate          DateTime         @default(now())
+  note              String?          @db.Text
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  purchaseOrderId   BigInt?
+  productionOrderId BigInt?
+  salesOrderId      BigInt?
+  createdBy         User?            @relation("StockMoves_CreatedBy", fields: [createdById], references: [id])
+  productionOrder   ProductionOrder? @relation("StockMove_ProductionOrder", fields: [productionOrderId], references: [id])
+  purchaseOrder     PurchaseOrder?   @relation("StockMove_PurchaseOrder", fields: [purchaseOrderId], references: [id])
+  salesOrder        SalesOrder?      @relation("StockMove_SalesOrder", fields: [salesOrderId], references: [id])
+  warehouse         Warehouse        @relation(fields: [warehouseId], references: [id])
+  lines             StockMoveLine[]
+
+  @@index([warehouseId])
+  @@index([createdById])
+  @@index([purchaseOrderId])
+  @@index([productionOrderId])
+  @@index([salesOrderId])
+  @@index([warehouseId, moveDate])
+  @@index([status, moveDate])
+  @@index([moveType, moveDate])
+  @@map("stock_moves")
+}
+
+model StockMoveLine {
+  id               BigInt          @id @default(autoincrement())
+  stockMoveId      BigInt
+  itemId           BigInt?
+  productVariantId BigInt?
+  uom              String          @default("pcs") @db.VarChar(20)
+  qty              Decimal         @db.Decimal(18, 3)
+  unitCost         Decimal?        @db.Decimal(18, 4)
+  fromLocationId   BigInt?
+  toLocationId     BigInt?
+  note             String?         @db.Text
+  fromLocation     Location?       @relation("FromLocation", fields: [fromLocationId], references: [id])
+  item             Item?           @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+  stockMove        StockMove       @relation(fields: [stockMoveId], references: [id], onDelete: Cascade)
+  toLocation       Location?       @relation("ToLocation", fields: [toLocationId], references: [id])
+
+  @@index([stockMoveId])
+  @@index([itemId])
+  @@index([productVariantId])
+  @@index([fromLocationId])
+  @@index([toLocationId])
+  @@index([stockMoveId, itemId])
+  @@index([stockMoveId, productVariantId])
+  @@map("stock_moves_line")
+}
 
 enum SalesOrderStatus {
   DRAFT
@@ -56,604 +640,16 @@ enum ItemType {
   OTHER
 }
 
-//
-// ===================== RBAC / AUTH =====================
-//
-
-model User {
-  id           BigInt    @id @default(autoincrement())
-  email        String    @unique @db.VarChar(150)
-  passwordHash String    @db.VarChar(255)
-  fullName     String    @db.VarChar(150)
-  isActive     Boolean   @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
-
-  roles         UserRole[]
-  refreshTokens RefreshToken[]
-
-  // Business relations
-  customerNotes     CustomerNote[]
-  salesOrders       SalesOrder[]
-  purchaseOrders    PurchaseOrder[]   @relation("PurchaseOrders_CreatedBy")
-  stockMoves        StockMove[]       @relation("StockMoves_CreatedBy")
-  productionOrders  ProductionOrder[] @relation("ProductionOrders_CreatedBy")
-
-  @@map("users")
+enum BomVersionStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ARCHIVED
 }
 
-model Role {
-  id          BigInt   @id @default(autoincrement())
-  code        String   @unique @db.VarChar(50)
-  name        String   @db.VarChar(150)
-  description String?  @db.VarChar(255)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users       UserRole[]
-  permissions RolePermission[]
-
-  @@map("roles")
-}
-
-model Permission {
-  id        BigInt   @id @default(autoincrement())
-  code      String   @unique @db.VarChar(80)
-  name      String   @db.VarChar(150)
-  module    String   @db.VarChar(80)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  roles RolePermission[]
-
-  @@map("permissions")
-}
-
-model UserRole {
-  userId BigInt
-  roleId BigInt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@id([userId, roleId])
-  @@index([roleId])
-  @@map("role_user")
-}
-
-model RolePermission {
-  roleId       BigInt
-  permissionId BigInt
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@id([roleId, permissionId])
-  @@index([permissionId])
-  @@map("role_permission")
-}
-
-model RefreshToken {
-  id        BigInt    @id @default(autoincrement())
-  userId    BigInt
-  tokenHash String    @unique @db.VarChar(255)
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
-  userAgent String?   @db.VarChar(255)
-  ip        String?   @db.VarChar(64)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("refresh_tokens")
-}
-
-//
-// ===================== CUSTOMERS =====================
-//
-
-model Customer {
-  id        BigInt   @id @default(autoincrement())
-  code      String?  @unique @db.VarChar(50)
-  name      String   @db.VarChar(200)
-  taxCode   String?  @db.VarChar(50)
-  phone     String?  @db.VarChar(30)
-  email     String?  @db.VarChar(150)
-  address   String?  @db.VarChar(255)
-  note      String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  notes       CustomerNote[]
-  salesOrders SalesOrder[]
-
-  // list/search nhanh
-  @@index([name])
-  @@index([phone])
-
-  @@map("customers")
-}
-
-model CustomerNote {
-  id         BigInt   @id @default(autoincrement())
-  customerId BigInt
-  userId     BigInt?
-  content    String   @db.Text
-  createdAt  DateTime @default(now())
-
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([customerId])
-  @@index([userId])
-  @@map("customer_notes")
-}
-
-//
-// ===================== PRODUCT (STYLE/SIZE/COLOR/VARIANT) =====================
-//
-
-model ProductStyle {
-  id        BigInt   @id @default(autoincrement())
-  code      String?  @unique @db.VarChar(50)
-  name      String   @db.VarChar(200)
-  note      String?  @db.VarChar(255)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  variants          ProductVariant[]
-  salesOrderItems   SalesOrderItem[]
-  productionOrders  ProductionOrder[]
-  boms              Bom[]
-
-  @@map("product_style")
-}
-
-model Size {
-  id        BigInt   @id @default(autoincrement())
-  code      String   @unique @db.VarChar(30)
-  name      String?  @db.VarChar(80)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  variants ProductVariant[]
-
-  @@map("sizes")
-}
-
-model Color {
-  id        BigInt   @id @default(autoincrement())
-  code      String   @unique @db.VarChar(30)
-  name      String   @db.VarChar(80)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  variants ProductVariant[]
-
-  @@map("colors")
-}
-
-model ProductVariant {
-  id             BigInt   @id @default(autoincrement())
-  sku            String?  @unique @db.VarChar(60)
-  productStyleId BigInt
-  sizeId         BigInt
-  colorId        BigInt
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  productStyle ProductStyle @relation(fields: [productStyleId], references: [id], onDelete: Restrict)
-  size         Size         @relation(fields: [sizeId], references: [id], onDelete: Restrict)
-  color        Color        @relation(fields: [colorId], references: [id], onDelete: Restrict)
-
-  soBreakdowns   SoItemVariantBreakdown[]
-  moBreakdowns   ProductionOrderBreakdown[]
-  stockMoveLines StockMoveLine[]
-
-  @@unique([productStyleId, sizeId, colorId])
-  @@index([productStyleId])
-  @@index([sizeId])
-  @@index([colorId])
-  @@map("product_variant")
-}
-
-//
-// ===================== SALES (SO) + BREAKDOWN =====================
-//
-
-model SalesOrder {
-  id          BigInt           @id @default(autoincrement())
-  orderNo     String           @unique @db.VarChar(50)
-  customerId  BigInt
-  createdById BigInt?
-  orderDate   DateTime         @default(now())
-  dueDate     DateTime?
-  status      SalesOrderStatus @default(DRAFT)
-  note        String?          @db.Text
-  isInternal  Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
-
-  items      SalesOrderItem[]
-  stockMoves StockMove[] @relation("StockMove_SalesOrder")
-
-  @@index([customerId])
-  @@index([createdById])
-
-  // list/filter theo màn hình
-  @@index([status, orderDate])
-  @@index([customerId, orderDate])
-
-  @@map("sale_orders")
-}
-
-model SalesOrderItem {
-  id             BigInt   @id @default(autoincrement())
-  salesOrderId   BigInt
-  lineNo         Int
-  productStyleId BigInt
-  itemName       String   @db.VarChar(200)
-  uom            String   @default("pcs") @db.VarChar(20)
-  qtyTotal       Decimal  @db.Decimal(18, 3)
-  unitPrice      Decimal  @db.Decimal(18, 2)
-  amount         Decimal  @db.Decimal(18, 2)
-  note           String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  salesOrder   SalesOrder   @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  productStyle ProductStyle @relation(fields: [productStyleId], references: [id], onDelete: Restrict)
-
-  breakdowns       SoItemVariantBreakdown[]
-  productionOrders ProductionOrder[]
-
-  @@unique([salesOrderId, lineNo])
-  @@index([productStyleId])
-  @@index([salesOrderId])
-
-  @@map("sale_orders_item")
-}
-
-model SoItemVariantBreakdown {
-  id               BigInt  @id @default(autoincrement())
-  salesOrderItemId BigInt
-  productVariantId BigInt
-  qty              Decimal @db.Decimal(18, 3)
-
-  salesOrderItem SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
-  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
-
-  @@unique([salesOrderItemId, productVariantId])
-  @@index([productVariantId])
-  @@map("so_item_variant_breakdowns")
-}
-
-//
-// ===================== PRODUCTION (MO) + BREAKDOWN + MATERIAL REQUIREMENTS =====================
-//
-
-model ProductionOrder {
-  id               BigInt                @id @default(autoincrement())
-  moNo             String                @unique @db.VarChar(50)
-  salesOrderItemId BigInt?
-  productStyleId   BigInt
-  createdById      BigInt?
-  qtyPlan          Decimal               @db.Decimal(18, 3)
-  qtyDone          Decimal               @db.Decimal(18, 3) @default(0)
-  startDate        DateTime?
-  dueDate          DateTime?
-  status           ProductionOrderStatus @default(DRAFT)
-  note             String?               @db.Text
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-
-  salesOrderItem SalesOrderItem? @relation(fields: [salesOrderItemId], references: [id], onDelete: SetNull)
-  productStyle   ProductStyle    @relation(fields: [productStyleId], references: [id], onDelete: Restrict)
-  createdBy      User?           @relation("ProductionOrders_CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  breakdowns           ProductionOrderBreakdown[]
-  materialRequirements MoMaterialRequirement[]
-  stockMoves           StockMove[] @relation("StockMove_ProductionOrder")
-
-  @@index([salesOrderItemId])
-  @@index([productStyleId])
-  @@index([createdById])
-
-  // list/kanban theo trạng thái + hạn
-  @@index([status])
-  @@index([status, dueDate])
-
-  @@map("production_order")
-}
-
-model ProductionOrderBreakdown {
-  id                BigInt  @id @default(autoincrement())
-  productionOrderId BigInt
-  productVariantId  BigInt
-  qtyPlan           Decimal @db.Decimal(18, 3)
-  qtyDone           Decimal @db.Decimal(18, 3) @default(0)
-
-  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
-  productVariant  ProductVariant  @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
-
-  @@unique([productionOrderId, productVariantId])
-  @@index([productVariantId])
-  @@map("production_order_breakdowns")
-}
-
-model MoMaterialRequirement {
-  id                BigInt   @id @default(autoincrement())
-  productionOrderId BigInt
-  itemId            BigInt
-  uom               String   @default("pcs") @db.VarChar(20)
-  qtyRequired       Decimal  @db.Decimal(18, 3)
-  qtyIssued         Decimal  @db.Decimal(18, 3) @default(0)
-  wastagePercent    Decimal  @db.Decimal(8, 2)  @default(0)
-  createdAt         DateTime @default(now())
-
-  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
-  item            Item            @relation(fields: [itemId], references: [id], onDelete: Restrict)
-
-  @@unique([productionOrderId, itemId])
-  @@index([itemId])
-  @@map("mo_material_requirement")
-}
-
-//
-// ===================== ITEMS + BOM =====================
-//
-
-model Item {
-  id        BigInt   @id @default(autoincrement())
-  sku       String?  @unique @db.VarChar(60)
-  name      String   @db.VarChar(200)
-  itemType  ItemType
-  baseUom   String   @default("pcs") @db.VarChar(20)
-  isActive  Boolean  @default(true)
-  note      String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  bomLines       BomLine[]
-  moRequirements MoMaterialRequirement[]
-  purchaseLines  PurchaseOrderLine[]
-  stockMoveLines StockMoveLine[]
-
-  @@index([itemType])
-  @@map("items")
-}
-
-model Bom {
-  id             BigInt   @id @default(autoincrement())
-  code           String?  @unique @db.VarChar(50)
-  productStyleId BigInt
-  name           String?  @db.VarChar(200)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  productStyle ProductStyle @relation(fields: [productStyleId], references: [id], onDelete: Cascade)
-  lines        BomLine[]
-
-  @@index([productStyleId])
-  @@map("boms")
-}
-
-model BomLine {
-  id             BigInt  @id @default(autoincrement())
-  bomId          BigInt
-  itemId         BigInt
-  uom            String  @default("pcs") @db.VarChar(20)
-  qtyPerUnit     Decimal @db.Decimal(18, 6)
-  wastagePercent Decimal @db.Decimal(8, 2) @default(0)
-
-  bom  Bom  @relation(fields: [bomId], references: [id], onDelete: Cascade)
-  item Item @relation(fields: [itemId], references: [id], onDelete: Restrict)
-
-  @@unique([bomId, itemId])
-  @@index([itemId])
-  @@map("bom_lines")
-}
-
-//
-// ===================== SUPPLIERS + PURCHASING =====================
-//
-
-model Supplier {
-  id        BigInt   @id @default(autoincrement())
-  code      String?  @unique @db.VarChar(50)
-  name      String   @db.VarChar(200)
-  taxCode   String?  @db.VarChar(50)
-  phone     String?  @db.VarChar(30)
-  email     String?  @db.VarChar(150)
-  address   String?  @db.VarChar(255)
-  note      String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  purchaseOrders PurchaseOrder[]
-
-  @@map("supplier")
-}
-
-model PurchaseOrder {
-  id          BigInt              @id @default(autoincrement())
-  poNo        String              @unique @db.VarChar(50)
-  supplierId  BigInt
-  createdById BigInt?
-  orderDate   DateTime            @default(now())
-  status      PurchaseOrderStatus @default(DRAFT)
-  note        String?             @db.Text
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  supplier  Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  createdBy User?     @relation("PurchaseOrders_CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  lines      PurchaseOrderLine[]
-  stockMoves StockMove[] @relation("StockMove_PurchaseOrder")
-
-  @@index([supplierId])
-  @@index([createdById])
-
-  // list/filter theo màn hình
-  @@index([status, orderDate])
-  @@index([supplierId, orderDate])
-
-  @@map("purchase_order")
-}
-
-model PurchaseOrderLine {
-  id              BigInt  @id @default(autoincrement())
-  purchaseOrderId BigInt
-  lineNo          Int
-  itemId          BigInt
-  uom             String  @default("pcs") @db.VarChar(20)
-  qty             Decimal @db.Decimal(18, 3)
-  unitPrice       Decimal @db.Decimal(18, 2)
-  amount          Decimal @db.Decimal(18, 2)
-  receivedQty     Decimal @db.Decimal(18, 3) @default(0)
-
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  item          Item          @relation(fields: [itemId], references: [id], onDelete: Restrict)
-
-  @@unique([purchaseOrderId, lineNo])
-  @@index([itemId])
-  @@index([purchaseOrderId])
-
-  @@map("purchase_order_line")
-}
-
-//
-// ===================== WAREHOUSE / LOCATION =====================
-//
-
-model Warehouse {
-  id        BigInt   @id @default(autoincrement())
-  code      String   @unique @db.VarChar(30)
-  name      String   @db.VarChar(150)
-  note      String?  @db.VarChar(255)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  locations  Location[]
-  stockMoves StockMove[]
-
-  @@map("warehouse")
-}
-
-model Location {
-  id          BigInt   @id @default(autoincrement())
-  warehouseId BigInt
-  code        String   @db.VarChar(50)
-  name        String   @db.VarChar(150)
-  parentId    BigInt?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  parent    Location? @relation("LocationParent", fields: [parentId], references: [id], onDelete: SetNull)
-  children  Location[] @relation("LocationParent")
-
-  fromLines StockMoveLine[] @relation("FromLocation")
-  toLines   StockMoveLine[] @relation("ToLocation")
-
-  @@unique([warehouseId, code])
-  @@index([parentId])
-
-  // tree query + list theo kho
-  @@index([warehouseId, parentId])
-
-  @@map("location")
-}
-
-//
-// ===================== STOCK MOVES (phiếu kho) =====================
-//
-
-model StockMove {
-  id              BigInt          @id @default(autoincrement())
-  moveNo          String          @unique @db.VarChar(50)
-  moveType        StockMoveType
-  status          StockMoveStatus @default(DRAFT)
-  warehouseId     BigInt
-  createdById     BigInt?
-  moveDate        DateTime        @default(now())
-  note            String?         @db.Text
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-
-  purchaseOrderId   BigInt?
-  productionOrderId BigInt?
-  salesOrderId      BigInt?
-
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  createdBy User?     @relation("StockMoves_CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  purchaseOrder   PurchaseOrder?   @relation("StockMove_PurchaseOrder", fields: [purchaseOrderId], references: [id], onDelete: SetNull)
-  productionOrder ProductionOrder? @relation("StockMove_ProductionOrder", fields: [productionOrderId], references: [id], onDelete: SetNull)
-  salesOrder      SalesOrder?      @relation("StockMove_SalesOrder", fields: [salesOrderId], references: [id], onDelete: SetNull)
-
-  lines StockMoveLine[]
-
-  @@index([warehouseId])
-  @@index([createdById])
-  @@index([purchaseOrderId])
-  @@index([productionOrderId])
-  @@index([salesOrderId])
-
-  // list/filter theo màn hình nhập/xuất kho
-  @@index([warehouseId, moveDate])
-  @@index([status, moveDate])
-  @@index([moveType, moveDate])
-
-  @@map("stock_moves")
-}
-
-model StockMoveLine {
-  id               BigInt   @id @default(autoincrement())
-  stockMoveId      BigInt
-
-  // XOR: chỉ được set 1 trong 2 (enforce ở service)
-  itemId           BigInt?
-  productVariantId BigInt?
-
-  uom              String   @default("pcs") @db.VarChar(20)
-  qty              Decimal  @db.Decimal(18, 3)
-  unitCost         Decimal? @db.Decimal(18, 4)
-
-  fromLocationId   BigInt?
-  toLocationId     BigInt?
-
-  note             String?  @db.Text
-
-  stockMove StockMove @relation(fields: [stockMoveId], references: [id], onDelete: Cascade)
-
-  item           Item?           @relation(fields: [itemId], references: [id], onDelete: Restrict)
-  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
-
-  fromLocation Location? @relation("FromLocation", fields: [fromLocationId], references: [id], onDelete: SetNull)
-  toLocation   Location? @relation("ToLocation", fields: [toLocationId], references: [id], onDelete: SetNull)
-
-  @@index([stockMoveId])
-  @@index([itemId])
-  @@index([productVariantId])
-  @@index([fromLocationId])
-  @@index([toLocationId])
-
-  // join/filter theo line khi list chứng từ
-  @@index([stockMoveId, itemId])
-  @@index([stockMoveId, productVariantId])
-
-  @@map("stock_moves_line")
+enum BomApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

@@ -65,8 +65,8 @@ export default function Products() {
     onError: (e: any) => message.error(e?.message || "Xóa thất bại"),
   });
 
-  const rows: Product[] = data?.data ?? [];
-  const meta = data?.meta;
+  const rows: Product[] = (data as any)?.data ?? [];
+  const meta = (data as any)?.meta;
 
   return (
     <Space orientation="vertical" size={16} style={{ width: "100%" }}>
