@@ -66,6 +66,8 @@ import { BomCostAnalysis } from "@/modules/boms/components/BomCostAnalysis";
 import { BomVersion } from "@/modules/boms/components/BomVersion";
 import { BomTemplates } from "@/modules/boms/components/BomTemplates";
 import { BomComparison } from "@/modules/boms/components/BomComparison";
+import { BomProductionIntegration } from "@/modules/boms/components/BomProductionIntegration";
+import { ProductionOrderFromBom } from "@/modules/production-orders/views/ProductionOrderFromBom";
 
 export default function AppRoutes() {
   return (
@@ -161,6 +163,8 @@ export default function AppRoutes() {
           <Route path={URLS.BOMS_VERSIONS(":id")} element={<BomVersion />} />
           <Route path={URLS.BOMS_COMPARISON} element={<BomComparison />} />
           <Route path={URLS.BOMS_TEMPLATES} element={<BomTemplates />} />
+          <Route path={URLS.BOMS_PRODUCTION_INTEGRATION(":id")} element={<BomProductionIntegration />} />
+          <Route path={URLS.PRODUCTION_ORDER_FROM_BOM} element={<ProductionOrderFromBom />} />
 
           <Route path={URLS.FILES} element={<Files />} />
           <Route path={URLS.AUDIT_LOGS} element={<AuditLogs />} />
